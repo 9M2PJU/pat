@@ -333,12 +333,14 @@ $(document).ready(function() {
   $('#auxiliary_addresses').tokenfield(tokenfieldConfig);
   // Load current config
   let originalConfig;
-  $.ajax({
-    url: '/api/config',
-    type: 'GET',
-    dataType: 'json',
-    success: function(config) {
-      originalConfig = JSON.parse(JSON.stringify(config)); // Deep clone
+
+  function loadConfig() {
+    $.ajax({
+      url: '/api/config',
+      type: 'GET',
+      dataType: 'json',
+      success: function(config) {
+        originalConfig = JSON.parse(JSON.stringify(config)); // Deep clone
       $('#mycall').val(config.mycall || '').trigger('blur');
       $('#locator').val(config.locator || '');
       $('#auto_download_limit').val(typeof config.auto_download_size_limit === 'number' ? config.auto_download_size_limit : -1);
@@ -447,6 +449,7 @@ $(document).ready(function() {
       const aliases = config.connect_aliases || {};
       const container = $('#aliasesContainer');
       const templateRow = $('.alias-row').first().clone(); // Cache template before emptying
+      templateRow.find('input').val(''); // Clear any values from bfcache
       container.empty();
 
       Object.entries(aliases).forEach(([key, value]) => {
@@ -468,6 +471,18 @@ $(document).ready(function() {
       }
     }, error: function(xhr) {
       showError('Failed to load config: ' + xhr.responseText);
+    }
+    });
+  }
+
+  // Load config on initial page load
+  loadConfig();
+
+  // Detect bfcache restoration and reload config
+  $(window).on('pageshow', function(event) {
+    if (event.originalEvent.persisted) {
+      // Page was restored from bfcache, reload the config
+      loadConfig();
     }
   });
 
