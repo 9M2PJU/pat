@@ -451,17 +451,32 @@ $(document).ready(function() {
       const templateRow = $('.alias-row').first().clone(); // Cache template before emptying
       templateRow.find('input').val(''); // Clear any values from bfcache
       container.empty();
-
       Object.entries(aliases).forEach(([key, value]) => {
         const row = templateRow.clone();
         row.find('.alias-key').val(key);
         row.find('.alias-value').val(value);
         container.append(row);
       });
-
       // Always add at least one empty row
       if (Object.keys(aliases).length === 0) {
         container.append(templateRow.clone());
+      }
+
+      // Populate schedules
+      const schedules = config.schedule || {};
+      const scheduleContainer = $('#scheduleContainer');
+      const scheduleTemplateRow = $('.schedule-row').first().clone();
+      scheduleTemplateRow.find('input').val(''); // Clear any values from bfcache
+      scheduleContainer.empty();
+      Object.entries(schedules).forEach(([expr, cmd]) => {
+        const row = scheduleTemplateRow.clone();
+        row.find('.schedule-expr').val(expr);
+        row.find('.schedule-cmd').val(cmd);
+        scheduleContainer.append(row);
+      });
+      // Always add at least one empty row
+      if (Object.keys(schedules).length === 0) {
+        scheduleContainer.append(scheduleTemplateRow.clone());
       }
 
       // Handle create-account action from query parameter
@@ -754,5 +769,15 @@ $(document).ready(function() {
     const newRow = $('.alias-row').first().clone();
     newRow.find('input').val('');
     $('#aliasesContainer').append(newRow);
+  });
+
+  $('#scheduleContainer').on('click', '.delete-schedule', function() {
+    $(this).closest('.schedule-row').remove();
+  });
+
+  $('#addSchedule').click(function() {
+    const newRow = $('.schedule-row').first().clone();
+    newRow.find('input').val('');
+    $('#scheduleContainer').append(newRow);
   });
 });
