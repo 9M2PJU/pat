@@ -6,18 +6,12 @@ package api
 
 import (
 	"context"
-	"embed"
 	"encoding/json"
 	"fmt"
-	"html/template"
-	"io"
-	"io/fs"
 	"log"
 	"maps"
 	"net"
 	"net/http"
-	"net/http/httputil"
-	"net/url"
 	"os"
 	"sort"
 	"strconv"
@@ -29,6 +23,7 @@ import (
 	"github.com/la5nta/pat/internal/buildinfo"
 	"github.com/la5nta/pat/internal/gpsd"
 	"github.com/la5nta/pat/internal/patapi"
+	"github.com/la5nta/pat/web"
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
@@ -39,16 +34,10 @@ import (
 	"github.com/pd0mz/go-maidenhead"
 )
 
-// The web/ go:embed directive must be in package main because we can't
-// reference ../ here. main assigns this variable on init.
-var EmbeddedFS embed.FS
-
 type HTTPError struct {
 	error
 	StatusCode int
 }
-
-func devServerAddr() string { return strings.TrimSuffix(os.Getenv("PAT_WEB_DEV_ADDR"), "/") }
 
 func ListenAndServe(ctx context.Context, a *app.App, addr string) error {
 	log.Printf("Starting HTTP service (http://%s)...", addr)
@@ -59,12 +48,7 @@ func ListenAndServe(ctx context.Context, a *app.App, addr string) error {
 			"\n         your current position to anyone who has access to the Pat web interface!\n\n")
 	}
 
-	staticContent, err := fs.Sub(EmbeddedFS, "web")
-	if err != nil {
-		return err
-	}
-
-	handler := NewHandler(a, staticContent)
+	handler := NewHandler(a)
 	go handler.wsHub.WatchMBox(ctx, a.Mailbox())
 	if err := a.EnableWebSocket(ctx, handler.wsHub); err != nil {
 		return err
@@ -99,7 +83,7 @@ type Handler struct {
 
 func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) { h.r.ServeHTTP(w, r) }
 
-func NewHandler(app *app.App, staticContent fs.FS) *Handler {
+func NewHandler(app *app.App) *Handler {
 	r := mux.NewRouter()
 	h := &Handler{app, NewWSHub(app), r}
 
@@ -140,31 +124,12 @@ func NewHandler(app *app.App, staticContent fs.FS) *Handler {
 	r.HandleFunc("/api/winlink-account/password-recovery-email", h.winlinkPasswordRecoveryEmailHandler).Methods("GET", "PUT")
 	r.HandleFunc("/api/winlink-account/registration", h.winlinkAccountRegistrationHandler).Methods("GET", "POST")
 
-	r.PathPrefix("/dist/").Handler(h.distHandler(staticContent))
 	r.HandleFunc("/ws", h.wsHandler)
-	r.HandleFunc("/ui", h.uiHandler(staticContent, "dist/index.html")).Methods("GET")
-	r.HandleFunc("/ui/config", h.uiHandler(staticContent, "dist/config.html")).Methods("GET")
-	r.HandleFunc("/ui/template", h.uiHandler(staticContent, "dist/template.html")).Methods("GET")
-	r.HandleFunc("/", h.rootHandler).Methods("GET")
+	r.PathPrefix("/ui").Handler(web.UIHandler(h.Options().MyCall))
+	r.PathPrefix("/dist").Handler(web.DistHandler())
+	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { http.Redirect(w, r, "/ui", http.StatusFound) })
 
 	return h
-}
-
-func (h Handler) distHandler(staticContent fs.FS) http.Handler {
-	switch target := devServerAddr(); {
-	case target != "":
-		targetURL, err := url.Parse(target)
-		if err != nil {
-			log.Fatalf("invalid proxy target URL: %v", err)
-		}
-		return httputil.NewSingleHostReverseProxy(targetURL)
-	default:
-		return http.FileServer(http.FS(staticContent))
-	}
-}
-
-func (h Handler) rootHandler(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, "/ui", http.StatusFound)
 }
 
 func (h Handler) connectAliasesHandler(w http.ResponseWriter, _ *http.Request) {
@@ -241,43 +206,6 @@ func (h Handler) wsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	_ = conn.WriteJSON(struct{ MyCall string }{h.Options().MyCall})
 	h.wsHub.Handle(conn)
-}
-
-func (h Handler) uiHandler(staticContent fs.FS, templatePath string) http.HandlerFunc {
-	templateFunc := func() ([]byte, error) { return fs.ReadFile(staticContent, templatePath) }
-	if target := devServerAddr(); target != "" {
-		templateFunc = func() ([]byte, error) {
-			resp, err := http.Get(target + "/" + templatePath)
-			if err != nil {
-				return nil, fmt.Errorf("dev server not reachable: %w", err)
-			}
-			defer resp.Body.Close()
-			return io.ReadAll(resp.Body)
-		}
-	}
-
-	return func(w http.ResponseWriter, r *http.Request) {
-		// Redirect to config if no callsign is set and we're not already on config page
-		if h.Options().MyCall == "" && r.URL.Path != "/ui/config" {
-			http.Redirect(w, r, "/ui/config", http.StatusFound)
-			return
-		}
-		data, err := templateFunc()
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		t, err := template.New("index.html").Parse(string(data))
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		tmplData := struct{ AppName, Version, Mycall string }{buildinfo.AppName, buildinfo.VersionString(), h.Options().MyCall}
-		if err := t.Execute(w, tmplData); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	}
 }
 
 func (h Handler) statusHandler(w http.ResponseWriter, _ *http.Request) {

@@ -7,14 +7,12 @@ package main
 
 import (
 	"context"
-	"embed"
 	"fmt"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/la5nta/pat/api"
 	"github.com/la5nta/pat/app"
 	"github.com/la5nta/pat/cfg"
 	"github.com/la5nta/pat/cli"
@@ -24,12 +22,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-//go:embed web/dist/**
-var embeddedFS embed.FS
-
 func init() {
-	api.EmbeddedFS = embeddedFS
-
 	pflag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "%s is a client for the Winlink 2000 Network.\n\n", buildinfo.AppName)
 		fmt.Fprintf(os.Stderr, "Usage:\n  %s [options] command [arguments]\n", os.Args[0])
