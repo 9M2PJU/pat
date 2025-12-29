@@ -22,7 +22,11 @@ type Job struct {
 func scheduleLoop(ctx context.Context, a *app.App) {
 	jobs := make([]*Job, 0, len(a.Config().Schedule))
 	for exprStr, cmd := range a.Config().Schedule {
-		expr := cronexpr.MustParse(exprStr)
+		expr, err := cronexpr.Parse(exprStr)
+		if err != nil {
+			log.Printf("Skipping invalid schedule expression %q: %v", exprStr, err)
+			continue
+		}
 		jobs = append(jobs, &Job{
 			expr,
 			cmd,
