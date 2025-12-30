@@ -414,7 +414,7 @@ var DefaultConfig = Config{
 		Path:       "/dev/ttyUSB0",
 		SerialBaud: 9600,
 		HBaud:      1200,
-		Type:       "Kenwood",
+		Type:       "kenwood",
 	},
 	AGWPE: AGWPEConfig{
 		Addr:      "localhost:8000",

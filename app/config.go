@@ -130,6 +130,10 @@ func LoadConfig(cfgPath string, fallback cfg.Config) (config cfg.Config, err err
 		debug.Printf("Legacy serial_tnc.baudrate config detected (%d). Translating to serial_tnc.hbaud.", v)
 		config.SerialTNC.HBaud = v
 	}
+	// Compatibility for old type default 'Kenwood' (should be 'kenwood')
+	if v := config.SerialTNC.Type; v == "Kenwood" {
+		config.SerialTNC.Type = strings.ToLower(v)
+	}
 
 	// Ensure ARDOP.ConnectRequests has a default value
 	if config.Ardop.ConnectRequests == 0 {
