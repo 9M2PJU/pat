@@ -320,9 +320,6 @@ type SerialTNCConfig struct {
 
 	// Type of TNC (currently only 'kenwood').
 	Type string `json:"type"`
-
-	// (optional) Reference name to the Hamlib rig for frequency control.
-	Rig string `json:"rig"`
 }
 
 type AGWPEConfig struct {
