@@ -7,6 +7,60 @@ import (
 	"testing"
 )
 
+func TestShiftArgs(t *testing.T) {
+	tests := []struct {
+		name         string
+		input        []string
+		expected     string
+		expectedRest []string
+	}{
+		{
+			name:         "empty slice",
+			input:        []string{},
+			expected:     "",
+			expectedRest: nil,
+		},
+		{
+			name:         "single element",
+			input:        []string{"hello"},
+			expected:     "hello",
+			expectedRest: []string{},
+		},
+		{
+			name:         "multiple elements",
+			input:        []string{"hello", "world", "test"},
+			expected:     "hello",
+			expectedRest: []string{"world", "test"},
+		},
+		{
+			name:         "element with spaces",
+			input:        []string{"  hello  ", "world"},
+			expected:     "hello",
+			expectedRest: []string{"world"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, rest := shiftArgs(tt.input)
+
+			if result != tt.expected {
+				t.Errorf("shiftArgs(%v): expected result %q, got %q", tt.input, tt.expected, result)
+			}
+
+			if len(rest) != len(tt.expectedRest) {
+				t.Errorf("shiftArgs(%v): expected rest length %d, got %d", tt.input, len(tt.expectedRest), len(rest))
+			}
+
+			for i, expected := range tt.expectedRest {
+				if rest[i] != expected {
+					t.Errorf("shiftArgs(%v): rest[%d] = %q; expected %q", tt.input, i, rest[i], expected)
+				}
+			}
+		})
+	}
+}
+
 func setupMockStdin(input string) func() {
 	originalStdin := stdin
 	stdin = bufio.NewReader(strings.NewReader(input))

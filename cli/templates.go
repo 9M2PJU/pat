@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"strconv"
-	"strings"
 
 	"github.com/la5nta/pat/app"
 )
@@ -22,13 +21,6 @@ subcommands:
   seqset 0           Reset the current sequence value to 0.
 `
 )
-
-func shiftArgs(s []string) (string, []string) {
-	if len(s) == 0 {
-		return "", nil
-	}
-	return strings.TrimSpace(s[0]), s[1:]
-}
 
 func TemplatesHandle(ctx context.Context, app *app.App, args []string) {
 	switch cmd, args := shiftArgs(args); cmd {

@@ -17,6 +17,13 @@ import (
 	"github.com/la5nta/wl2k-go/mailbox"
 )
 
+func shiftArgs(s []string) (string, []string) {
+	if len(s) == 0 {
+		return "", nil
+	}
+	return strings.TrimSpace(s[0]), s[1:]
+}
+
 var stdin *bufio.Reader
 
 func readLine() string {
