@@ -325,7 +325,7 @@ $(document).ready(function() {
   });
 
   // Initialize Bootstrap Select components and tokenfield
-  $('#ardop_arq_bandwidth, #vara_hf_bandwidth, #vara_fm_bandwidth').selectpicker();
+  $('#ardop_arq_bandwidth, #vara_hf_bandwidth').selectpicker();
   const tokenfieldConfig = {
     delimiter: [',', ';', ' '],
     createTokensOnBlur: true,
@@ -341,8 +341,8 @@ $(document).ready(function() {
       dataType: 'json',
       success: function(config) {
         originalConfig = JSON.parse(JSON.stringify(config)); // Deep clone
-      $('#mycall').val(config.mycall || '').trigger('blur');
-      $('#locator').val(config.locator || '');
+      $('#mycall').val(config.mycall).trigger('blur');
+      $('#locator').val(config.locator);
       $('#auto_download_limit').val(typeof config.auto_download_size_limit === 'number' ? config.auto_download_size_limit : -1);
       $('#secure_login_password').val(config.secure_login_password ? '[REDACTED]' : '')
         .on('focus', function() {
@@ -374,6 +374,7 @@ $(document).ready(function() {
         nameInput.on('input', updateRigSelects); // Add input listener
         row.find('.rig-network').val(rig.network || '');
         row.find('.rig-address').val(rig.address || '');
+        row.find('.rig-vfo').val(rig.VFO);
         rigsContainer.append(row);
       });
 
@@ -384,60 +385,58 @@ $(document).ready(function() {
       updateRigSelects(); // Refresh rig dropdowns with loaded data
 
       // Populate transport configs
-      $('#ardop_addr').val((config.ardop && config.ardop.addr) || '');
+      $('#ardop_addr').val(config.ardop.addr);
       // Convert bandwidth object to string format
-      $('#ardop_connect_requests').val((config.ardop && config.ardop.connect_requests) || '');
-      const arqBW = config.ardop && config.ardop.arq_bandwidth;
+      $('#ardop_connect_requests').val(config.ardop.connect_requests);
+      const arqBW = config.ardop.arq_bandwidth;
       const bwValue = arqBW ? `${arqBW.Max}${arqBW.Forced ? 'FORCED' : 'MAX'}` : '';
       $('#ardop_arq_bandwidth').val(bwValue).selectpicker('refresh');
-      $('#ardop_cwid_enabled').prop('checked', (config.ardop && config.ardop.cwid_enabled) || false);
-      $('#ardop_beacon_interval').val((config.ardop && config.ardop.beacon_interval) || '');
-      $('#pactor_path').val((config.pactor && config.pactor.path) || '');
-      $('#pactor_baudrate').val((config.pactor && config.pactor.baudrate) || '');
-      $('#vara_hf_addr').val((config.varahf && config.varahf.addr) || '');
-      $('#vara_hf_bandwidth').val((config.varahf && config.varahf.bandwidth && config.varahf.bandwidth.toString()) || '').selectpicker('refresh');
-      $('#vara_fm_addr').val((config.varafm && config.varafm.addr) || '');
-      $('#vara_fm_bandwidth').val((config.varafm && config.varafm.bandwidth && config.varafm.bandwidth.toString()) || '');
+      $('#ardop_cwid_enabled').prop('checked', config.ardop.cwid_enabled);
+      $('#ardop_beacon_interval').val(config.ardop.beacon_interval);
+      $('#pactor_path').val(config.pactor.path);
+      $('#pactor_baudrate').val(config.pactor.baudrate);
+      $('#pactor_init_script').val(config.pactor.custom_init_script);
+      $('#vara_hf_addr').val(config.varahf.addr);
+      $('#vara_hf_bandwidth').val(config.varahf.bandwidth || '').selectpicker('refresh');
+      $('#vara_fm_addr').val(config.varafm.addr);
 
       // Populate transport rig selections
-      $('#ardop_rig').val((config.ardop && config.ardop.rig) || '');
-      $('#ardop_ptt_ctrl').prop('checked', (config.ardop && config.ardop.ptt_ctrl) || false);
-      $('#ax25_rig').val((config.ax25 && config.ax25.rig) || '');
-      $('#ax25_ptt_ctrl').prop('checked', (config.ax25 && config.ax25.ptt_ctrl) || false);
-      $('#pactor_rig').val((config.pactor && config.pactor.rig) || '');
-      $('#pactor_ptt_ctrl').prop('checked', (config.pactor && config.pactor.ptt_ctrl) || false);
-      $('#vara_hf_rig').val((config.varahf && config.varahf.rig) || '');
-      $('#vara_hf_ptt_ctrl').prop('checked', (config.varahf && config.varahf.ptt_ctrl) || false);
-      $('#vara_fm_rig').val((config.varafm && config.varafm.rig) || '');
-      $('#vara_fm_ptt_ctrl').prop('checked', (config.varafm && config.varafm.ptt_ctrl) || false);
+      $('#ardop_rig').val(config.ardop.rig);
+      $('#ardop_ptt_ctrl').prop('checked', config.ardop.ptt_ctrl);
+      $('#ax25_rig').val(config.ax25.rig);
+      $('#pactor_rig').val(config.pactor.rig);
+      $('#vara_hf_rig').val(config.varahf.rig);
+      $('#vara_hf_ptt_ctrl').prop('checked', config.varahf.ptt_ctrl);
+      $('#vara_fm_rig').val(config.varafm.rig);
+      $('#vara_fm_ptt_ctrl').prop('checked', config.varafm.ptt_ctrl);
 
       // Populate telnet config
-      $('#telnet_listen_addr').val((config.telnet && config.telnet.listen_addr) || '');
-      $('#telnet_password').val((config.telnet && config.telnet.password) || '');
+      $('#telnet_listen_addr').val(config.telnet.listen_addr);
+      $('#telnet_password').val(config.telnet.password);
 
       // Populate AX25 config
-      const ax25Config = config.ax25 || {};
+      const ax25Config = config.ax25;
       // Initialize all engine configs as collapsed first
       $('.ax25-engine-config .panel-collapse').collapse('hide');
       // Then show the selected one
-      $('#ax25_engine').val(ax25Config.engine || 'linux').trigger('change');
-      $('#ax25_linux_port').val((config.ax25linux && config.ax25linux.port) || '');
-      $('#agwpe_addr').val((config.agwpe && config.agwpe.addr) || '');
-      $('#agwpe_radio_port').val((config.agwpe && config.agwpe.radio_port) || 0);
-      $('#serial_tnc_path').val((config.serial_tnc && config.serial_tnc.path) || '');
-      $('#serial_tnc_baud').val((config.serial_tnc && config.serial_tnc.serial_baud) || 9600);
-      $('#serial_tnc_type').val((config.serial_tnc && config.serial_tnc.type) || 'kenwood');
-      $('#serial_tnc_hbaud').val((config.serial_tnc && config.serial_tnc.hbaud) || 1200);
-      $('#ax25_beacon_interval').val((config.ax25 && config.ax25.beacon && config.ax25.beacon.every) || '');
-      $('#ax25_beacon_message').val((config.ax25 && config.ax25.beacon && config.ax25.beacon.message) || '');
-      $('#ax25_beacon_dest').val((config.ax25 && config.ax25.beacon && config.ax25.beacon.destination) || '');
+      $('#ax25_engine').val(ax25Config.engine).trigger('change');
+      $('#ax25_linux_port').val(config.ax25_linux.port);
+      $('#agwpe_addr').val(config.agwpe.addr);
+      $('#agwpe_radio_port').val(config.agwpe.radio_port);
+      $('#serial_tnc_path').val(config['serial-tnc'].path);
+      $('#serial_tnc_baud').val(config['serial-tnc'].serial_baud);
+      $('#serial_tnc_type').val(config['serial-tnc'].type);
+      $('#serial_tnc_hbaud').val(config['serial-tnc'].hbaud);
+      $('#ax25_beacon_interval').val(config.ax25.beacon.every);
+      $('#ax25_beacon_message').val(config.ax25.beacon.message);
+      $('#ax25_beacon_dest').val(config.ax25.beacon.destination);
 
       // Populate GPSd config
-      $('#gpsd_enable_http').prop('checked', (config.gpsd && config.gpsd.enable_http) || false);
-      $('#gpsd_allow_forms').prop('checked', (config.gpsd && config.gpsd.allow_forms) || false);
-      $('#gpsd_use_server_time').prop('checked', (config.gpsd && config.gpsd.use_server_time) || false);
-      $('#gpsd_update_locator').prop('checked', (config.gpsd && config.gpsd.update_locator) || false);
-      $('#gpsd_addr').val((config.gpsd && config.gpsd.addr) || '');
+      $('#gpsd_enable_http').prop('checked', config.gpsd.enable_http);
+      $('#gpsd_allow_forms').prop('checked', config.gpsd.allow_forms);
+      $('#gpsd_use_server_time').prop('checked', config.gpsd.use_server_time);
+      $('#gpsd_update_locator').prop('checked', config.gpsd.update_locator);
+      $('#gpsd_addr').val(config.gpsd.addr);
 
       // Set listen methods checkboxes
       const listenMethods = config.listen || [];
@@ -539,31 +538,31 @@ $(document).ready(function() {
         } : {};
       })(),
       cwid_enabled: $('#ardop_cwid_enabled').is(':checked'),
-      rig: $('#ardop_rig').val() || '',
+      rig: $('#ardop_rig').val(),
       ptt_ctrl: $('#ardop_ptt_ctrl').is(':checked'),
-      beacon_interval: parseInt($('#ardop_beacon_interval').val(), 10) || 0
+      beacon_interval: parseInt($('#ardop_beacon_interval').val(), 10)
     };
     // Merge pactor config with existing values
     updatedConfig.pactor = {
       ...originalConfig.pactor,
       path: $('#pactor_path').val(),
       baudrate: parseInt($('#pactor_baudrate').val(), 10),
-      rig: $('#pactor_rig').val() || '',
-      ptt_ctrl: $('#pactor_ptt_ctrl').is(':checked')
+      custom_init_script: $('#pactor_init_script').val(),
+      rig: $('#pactor_rig').val()
     };
     // Merge varahf config with existing values
     updatedConfig.varahf = {
       ...originalConfig.varahf,
       addr: $('#vara_hf_addr').val(),
       bandwidth: parseInt($('#vara_hf_bandwidth').val(), 10),
-      rig: $('#vara_hf_rig').val() || '',
+      rig: $('#vara_hf_rig').val(),
       ptt_ctrl: $('#vara_hf_ptt_ctrl').is(':checked')
     };
     // Merge varafm config with existing values
     updatedConfig.varafm = {
       ...originalConfig.varafm,
       addr: $('#vara_fm_addr').val(),
-      rig: $('#vara_fm_rig').val() || '',
+      rig: $('#vara_fm_rig').val(),
       ptt_ctrl: $('#vara_fm_ptt_ctrl').is(':checked')
     };
     // Merge telnet config with existing values
@@ -575,8 +574,7 @@ $(document).ready(function() {
     updatedConfig.ax25 = {
       ...originalConfig.ax25,
       engine: $('#ax25_engine').val(),
-      rig: $('#ax25_rig').val() || '',
-      ptt_ctrl: $('#ax25_ptt_ctrl').is(':checked'),
+      rig: $('#ax25_rig').val(),
       beacon: {
         ...(originalConfig.ax25 && originalConfig.ax25.beacon) || {}, // Preserve existing beacon fields
         every: parseInt($('#ax25_beacon_interval').val(), 10),
@@ -584,9 +582,9 @@ $(document).ready(function() {
         destination: $('#ax25_beacon_dest').val()
       }
     };
-    // Merge ax25linux config with existing values
-    updatedConfig.ax25linux = {
-      ...originalConfig.ax25linux,
+    // Merge ax25_linux config with existing values
+    updatedConfig.ax25_linux = {
+      ...originalConfig.ax25_linux,
       port: $('#ax25_linux_port').val()
     };
     // Merge agwpe config with existing values
@@ -595,9 +593,9 @@ $(document).ready(function() {
       addr: $('#agwpe_addr').val(),
       radio_port: parseInt($('#agwpe_radio_port').val(), 10)
     };
-    // Merge serial_tnc config with existing values
-    updatedConfig.serial_tnc = {
-      ...originalConfig.serial_tnc,
+    // Merge serial-tnc config with existing values
+    updatedConfig['serial-tnc'] = {
+      ...originalConfig['serial-tnc'],
       path: $('#serial_tnc_path').val(),
       serial_baud: parseInt($('#serial_tnc_baud').val(), 10),
       type: $('#serial_tnc_type').val(),
@@ -624,7 +622,7 @@ $(document).ready(function() {
         updatedConfig.hamlib_rigs[name] = {
           address: address,
           network: network,
-          VFO: $(this).find('.rig-vfo').val() || ''
+          VFO: $(this).find('.rig-vfo').val()
         };
       }
     });
