@@ -15,7 +15,6 @@ import (
 	"github.com/kelseyhightower/envconfig"
 	"github.com/la5nta/pat/cfg"
 	"github.com/la5nta/pat/internal/buildinfo"
-	"github.com/la5nta/pat/internal/debug"
 )
 
 func LoadConfig(cfgPath string, fallback cfg.Config) (config cfg.Config, err error) {
@@ -111,11 +110,6 @@ func LoadConfig(cfgPath string, fallback cfg.Config) (config cfg.Config, err err
 	if config.GPSd == (cfg.GPSdConfig{}) {
 		config.GPSd = cfg.DefaultConfig.GPSd
 	}
-	// TODO: Remove after some release cycles (2019-09-29)
-	if v := config.GPSdAddrLegacy; v != "" && v != config.GPSd.Addr {
-		log.Println("Using deprecated configuration option gpsd_addr. Please set gpsd.addr instead.")
-		config.GPSd.Addr = v
-	}
 
 	// Ensure SerialTNC has a default hbaud and serialbaud
 	if config.SerialTNC.HBaud == 0 {
@@ -123,12 +117,6 @@ func LoadConfig(cfgPath string, fallback cfg.Config) (config cfg.Config, err err
 	}
 	if config.SerialTNC.SerialBaud == 0 {
 		config.SerialTNC.SerialBaud = cfg.DefaultConfig.SerialTNC.SerialBaud
-	}
-	// Compatibility for the old baudrate field for serial-tnc
-	if v := config.SerialTNC.BaudrateLegacy; v != 0 && v != config.SerialTNC.HBaud {
-		// Since we changed the default value from 9600 to 1200, we can't warn about this without causing confusion.
-		debug.Printf("Legacy serial_tnc.baudrate config detected (%d). Translating to serial_tnc.hbaud.", v)
-		config.SerialTNC.HBaud = v
 	}
 	// Compatibility for old type default 'Kenwood' (should be 'kenwood')
 	if v := config.SerialTNC.Type; v == "Kenwood" {

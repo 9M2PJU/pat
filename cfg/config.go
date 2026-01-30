@@ -112,10 +112,6 @@ type Config struct {
 	// See PredictionConfig.
 	Prediction PredictionConfig `json:"prediction,omitzero"`
 
-	// Legacy support for old config files only. This field is deprecated!
-	// Please use "Addr" field in GPSd config struct (GPSd.Addr)
-	GPSdAddrLegacy string `json:"gpsd_addr,omitempty"`
-
 	// Command schedule (cron-like syntax).
 	//
 	// Examples:
@@ -314,10 +310,6 @@ type SerialTNCConfig struct {
 	// HBaud is the the packet connection's baudrate (1200 or 9600).
 	HBaud int `json:"hbaud"`
 
-	// Baudrate of the packet connection.
-	// Deprecated: Use HBaud instead.
-	BaudrateLegacy int `json:"baudrate,omitempty"`
-
 	// Type of TNC (currently only 'kenwood').
 	Type string `json:"type"`
 }
@@ -448,7 +440,6 @@ var DefaultConfig = Config{
 		UpdateLocator: false,
 		Addr:          "localhost:2947", // Default listen address for GPSd
 	},
-	GPSdAddrLegacy: "",
-	Schedule:       map[string]string{},
-	HamlibRigs:     map[string]HamlibConfig{},
+	Schedule:   map[string]string{},
+	HamlibRigs: map[string]HamlibConfig{},
 }
