@@ -12,7 +12,7 @@ require (
 	github.com/gorilla/mux v1.8.1
 	github.com/gorilla/websocket v1.5.3
 	github.com/harenber/ptc-go/v2 v2.2.4
-	github.com/hashicorp/go-version v1.7.0
+	github.com/hashicorp/go-version v1.8.0
 	github.com/howeyc/gopass v0.0.0-20210920133722-c8aef6fb66ef
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/la5nta/wl2k-go v1.0.1
@@ -22,26 +22,27 @@ require (
 	github.com/pd0mz/go-maidenhead v1.0.0
 	github.com/peterh/liner v1.2.2
 	github.com/spf13/pflag v1.0.10
-	golang.org/x/sync v0.16.0
+	golang.org/x/sync v0.19.0
 )
 
 require (
 	dario.cat/mergo v1.0.2 // indirect
 	github.com/albenik/go-serial/v2 v2.6.1 // indirect
 	github.com/aymerick/douceur v0.2.0 // indirect
+	github.com/clipperhouse/stringish v0.1.1 // indirect
+	github.com/clipperhouse/uax29/v2 v2.4.0 // indirect
 	github.com/creack/goselect v0.1.3 // indirect
 	github.com/gorilla/css v1.0.1 // indirect
 	github.com/howeyc/crc16 v0.0.0-20171223171357-2b2a61e366a6 // indirect
-	github.com/mattn/go-runewidth v0.0.16 // indirect
+	github.com/mattn/go-runewidth v0.0.19 // indirect
 	github.com/paulrosania/go-charset v0.0.0-20190326053356-55c9d7a5834c // indirect
-	github.com/rivo/uniseg v0.4.7 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/crypto v0.41.0 // indirect
+	golang.org/x/crypto v0.47.0 // indirect
 	golang.org/x/mod v0.22.0 // indirect
-	golang.org/x/net v0.43.0 // indirect
-	golang.org/x/sys v0.35.0 // indirect
+	golang.org/x/net v0.49.0 // indirect
+	golang.org/x/sys v0.40.0 // indirect
 	golang.org/x/telemetry v0.0.0-20240522233618-39ace7a40ae7 // indirect
-	golang.org/x/term v0.34.0 // indirect
+	golang.org/x/term v0.39.0 // indirect
 	golang.org/x/tools v0.29.0 // indirect
 	golang.org/x/vuln v1.1.4 // indirect
 )
