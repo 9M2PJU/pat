@@ -13,7 +13,6 @@ import (
 	"github.com/la5nta/pat/internal/cmsapi"
 	"github.com/la5nta/pat/internal/debug"
 
-	"github.com/howeyc/gopass"
 	"github.com/pd0mz/go-maidenhead"
 )
 
@@ -68,11 +67,11 @@ func InitHandle(ctx context.Context, a *app.App, args []string) {
 	fmt.Printf("\nThat's it! Basic configuration is set. For advanced settings, run '%s configure' or use the web gui.\n", os.Args[0])
 }
 
-// promptPassword prompts the user to enter a password twice for confirmation
-func promptPassword() string {
+// promptNewPassword prompts the user to enter a password twice for confirmation
+func promptNewPassword() string {
 	for {
 		fmt.Println("\nPlease choose a password for your account (6-12 characters)")
-		password1, err := gopass.GetPasswdPrompt("Enter password: ", true, os.Stdin, os.Stdout)
+		password1, err := promptPassword("Enter password: ")
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -81,7 +80,7 @@ func promptPassword() string {
 			continue
 		}
 
-		password2, err := gopass.GetPasswdPrompt("Confirm password: ", true, os.Stdin, os.Stdout)
+		password2, err := promptPassword("Confirm password: ")
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -140,7 +139,7 @@ func handleNewAccount(ctx context.Context, cfg *cfg.Config) {
 	}
 
 	// Prompt for password
-	password := promptPassword()
+	password := promptNewPassword()
 
 	// Prompt for recovery email
 	fmt.Println("\nWould you like to set a password recovery email? This is optional, but highly recommended.")
@@ -203,7 +202,7 @@ L:
 		if cfg.SecureLoginPassword != "" {
 			promptStr = promptStr[:len(promptStr)-2] + fmt.Sprintf(" [%s]: ", strings.Repeat("*", len(cfg.SecureLoginPassword)))
 		}
-		password, err := gopass.GetPasswdPrompt(promptStr, true, os.Stdin, os.Stdout)
+		password, err := promptPassword(promptStr)
 		switch {
 		case err != nil:
 			log.Fatal(err)

@@ -13,7 +13,6 @@ require (
 	github.com/gorilla/websocket v1.5.3
 	github.com/harenber/ptc-go/v2 v2.2.4
 	github.com/hashicorp/go-version v1.8.0
-	github.com/howeyc/gopass v0.0.0-20210920133722-c8aef6fb66ef
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/la5nta/wl2k-go v1.0.1
 	github.com/microcosm-cc/bluemonday v1.0.27
@@ -23,6 +22,7 @@ require (
 	github.com/peterh/liner v1.2.2
 	github.com/spf13/pflag v1.0.10
 	golang.org/x/sync v0.19.0
+	golang.org/x/term v0.30.0
 )
 
 require (
@@ -37,12 +37,10 @@ require (
 	github.com/mattn/go-runewidth v0.0.19 // indirect
 	github.com/paulrosania/go-charset v0.0.0-20190326053356-55c9d7a5834c // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/crypto v0.47.0 // indirect
 	golang.org/x/mod v0.22.0 // indirect
-	golang.org/x/net v0.49.0 // indirect
+	golang.org/x/net v0.38.0 // indirect
 	golang.org/x/sys v0.40.0 // indirect
 	golang.org/x/telemetry v0.0.0-20240522233618-39ace7a40ae7 // indirect
-	golang.org/x/term v0.39.0 // indirect
 	golang.org/x/tools v0.29.0 // indirect
 	golang.org/x/vuln v1.1.4 // indirect
 )

@@ -8,8 +8,6 @@ import (
 	"strings"
 
 	"github.com/la5nta/pat/app"
-
-	"github.com/howeyc/gopass"
 )
 
 type TerminalPrompter struct{}
@@ -49,7 +47,7 @@ func (t TerminalPrompter) Prompt(prompt app.Prompt) {
 		}
 		prompt.Respond(strings.Join(selected, ","), nil)
 	case app.PromptKindPassword:
-		passwd, err := gopass.GetPasswdPrompt(prompt.Message+": ", true, os.Stdin, os.Stdout)
+		passwd, err := promptPassword(prompt.Message + ": ")
 		prompt.Respond(string(passwd), err)
 	case app.PromptKindBusyChannel:
 		fmt.Println(prompt.Message + ":")

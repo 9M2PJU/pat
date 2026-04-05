@@ -15,6 +15,8 @@ import (
 	"github.com/la5nta/pat/internal/debug"
 	"github.com/la5nta/wl2k-go/fbb"
 	"github.com/la5nta/wl2k-go/mailbox"
+
+	"golang.org/x/term"
 )
 
 func shiftArgs(s []string) (string, []string) {
@@ -84,6 +86,13 @@ func prompt2(w io.Writer, question, defaultValue string, options ...string) stri
 
 func prompt(question, defaultValue string, options ...string) string {
 	return prompt2(os.Stdout, question, defaultValue, options...)
+}
+
+func promptPassword(prompt string) (string, error) {
+	defer fmt.Fprintln(os.Stdout)
+	fmt.Fprint(os.Stdout, prompt)
+	passwd, err := term.ReadPassword(int(os.Stdin.Fd()))
+	return string(passwd), err
 }
 
 func SplitFunc(c rune) bool {
