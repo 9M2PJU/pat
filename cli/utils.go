@@ -37,13 +37,7 @@ func readLine() string {
 	return strings.TrimSpace(str)
 }
 
-func isTerminal(f *os.File) bool {
-	info, err := f.Stat()
-	if err != nil {
-		return true // Fail-safe
-	}
-	return (info.Mode() & os.ModeCharDevice) != 0
-}
+func isTerminal(f interface{ Fd() uintptr }) bool { return term.IsTerminal(int(f.Fd())) }
 
 func prompt2(w io.Writer, question, defaultValue string, options ...string) string {
 	var suffix string
