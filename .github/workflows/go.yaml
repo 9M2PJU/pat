@@ -17,9 +17,9 @@ jobs:
     env:
       GOTOOLCHAIN: ${{ matrix.gotoolchain }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
       - name: Setup Go ${{ matrix.go-version }}
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v6
         with:
           go-version: ${{ matrix.go-version }}
           check-latest: true
@@ -27,7 +27,7 @@ jobs:
       - if: ${{ matrix.os == 'ubuntu-latest' }}
         name: Cache libax25
         id: cache-libax25
-        uses: actions/cache@v3
+        uses: actions/cache@v5
         env:
           cache-name: cache-libax25
         with:
