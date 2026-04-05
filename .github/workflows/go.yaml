@@ -12,7 +12,10 @@ jobs:
         include:
           - os: ubuntu-latest
             go-version: '1.24'
+            gotoolchain: local
     runs-on: ${{ matrix.os }}
+    env:
+      GOTOOLCHAIN: ${{ matrix.gotoolchain }}
     steps:
       - uses: actions/checkout@v3
       - name: Setup Go ${{ matrix.go-version }}
@@ -35,7 +38,7 @@ jobs:
         name: Setup libax25
         run: ./make.bash libax25
       - name: Display Go version
-        run: go version
+        run: go version && go env
       - name: Vet
         run: go vet ./...
       - name: Govulncheck
