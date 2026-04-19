@@ -5,6 +5,7 @@ import (
 	"embed"
 	"html/template"
 	"io"
+	"io/fs"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -18,7 +19,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-//go:embed dist/**
+//go:embed dist
 var embeddedFS embed.FS
 
 func devServerAddr() string { return strings.TrimSuffix(os.Getenv("PAT_WEB_DEV_ADDR"), "/") }
@@ -33,7 +34,12 @@ func DistHandler() http.Handler {
 		}
 		return httputil.NewSingleHostReverseProxy(targetURL)
 	default:
-		return http.FileServer(http.FS(embeddedFS))
+		// We use dist as the root for the file server
+		fsys, err := fs.Sub(embeddedFS, "dist")
+		if err != nil {
+			panic(err)
+		}
+		return http.FileServer(http.FS(fsys))
 	}
 }
 
