@@ -2,8 +2,8 @@
 
 # Pat - Modern Winlink Client
 
-[![Build status](https://github.com/la5nta/pat/actions/workflows/go.yaml/badge.svg)](https://github.com/la5nta/pat/actions)
-[![Go Report Card](https://goreportcard.com/badge/github.com/la5nta/pat)](https://goreportcard.com/report/github.com/la5nta/pat)
+[![Build status](https://github.com/9M2PJU/pat/actions/workflows/go.yaml/badge.svg)](https://github.com/9M2PJU/pat/actions)
+[![Go Report Card](https://goreportcard.com/badge/github.com/9M2PJU/pat)](https://goreportcard.com/report/github.com/9M2PJU/pat)
 [![Liberapay Patreons](http://img.shields.io/liberapay/patrons/la5nta.svg?logo=liberapay)](https://liberapay.com/la5nta)
 
 Pat is a cross-platform Winlink client with basic messaging capabilities. It provides both a command-line interface and a **modern, responsive web interface** built with a premium glassmorphism aesthetic.

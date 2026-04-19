@@ -6,7 +6,7 @@ If you have any questions about how to contribute or what to contribute, please 
 
 ## Issue tracker Guidelines
 
-We use github's [issue tracker](https://github.com/la5nta/pat/issues) for keeping track of bugs, features and technical development discussions.
+We use github's [issue tracker](https://github.com/9M2PJU/pat/issues) for keeping track of bugs, features and technical development discussions.
 
 To keep the issue tracker nice and tidy, we ask for the following:
 
@@ -31,7 +31,7 @@ To make the process as seamless as possible, we ask for the following:
       - Run `go fmt`
       - Consider squashing your commits into a single commit. `git rebase -i`. It's okay to force update your pull request.
       - **Write a good commit message.** This [blog article](http://chris.beams.io/posts/git-commit/) is a good resource for learning how to write good commit messages, the most important part being that each commit message should have a title/subject in imperative mood starting with a capital letter and no trailing period: *"Return error on wrong use of the Paginator"*, **NOT** *"returning some error."* Also, if your commit references one or more GitHub issues, always end your commit message body with *See #1234* or *Fixes #1234*. Replace *1234* with the GitHub issue ID. The last example will close the issue when the commit is merged into *master*.
-      - Make sure `go test ./...` passes, and `go build` completes. Our [Travis CI loop](https://app.travis-ci.com/github/la5nta/pat) (Linux and OS&nbsp;X) will catch most things that are missing.
+      - Make sure `go test ./...` passes, and `go build` completes. Our [CI loop](https://github.com/9M2PJU/pat/actions) will catch most things that are missing.
 
 ## The release process
 
@@ -43,4 +43,4 @@ New releases of Pat is done by these steps:
 4. The release-branch is built and tested on *all targeted platforms*.
 5. If all status checks (Travis CI) passes, the release-branch is merged into *master* and tagged.
 6. Issues in the targeted milestone is either closed or moved to another milestone. The milestone is closed.
-7. The various binary packages are built and uploaded to [releases/](https://github.com/la5nta/Pat/releases).
+7. The various binary packages are built and uploaded to [releases/](https://github.com/9M2PJU/Pat/releases).

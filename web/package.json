@@ -7,7 +7,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/la5nta/pat.git"
+    "url": "git+https://github.com/9M2PJU/pat.git"
   },
   "engines": {
     "node": ">=18"
