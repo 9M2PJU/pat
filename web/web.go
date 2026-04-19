@@ -49,6 +49,10 @@ func UIHandler(mycall string) http.Handler {
 	r.HandleFunc("/ui", templateHandler("dist/index.html", mycall)).Methods("GET")
 	r.HandleFunc("/ui/config", templateHandler("dist/config.html", mycall)).Methods("GET")
 	r.HandleFunc("/ui/template", templateHandler("dist/template.html", mycall)).Methods("GET")
+
+	// Support relative asset paths from UI pages
+	r.PathPrefix("/ui/assets/").Handler(http.StripPrefix("/ui/", DistHandler()))
+
 	return r
 }
 
