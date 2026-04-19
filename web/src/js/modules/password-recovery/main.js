@@ -7,25 +7,22 @@ export class PasswordRecovery {
   }
 
   init() {
-    $(document).on('click', '#fix-now-btn', () => this.promptRecoveryEmail());
-    $(document).on('click', '#dismiss_password_warning', () => this.dismissPasswordRecoveryWarning());
+    document.addEventListener('click', (e) => {
+      if (e.target.id === 'fix-now-btn') this.promptRecoveryEmail();
+      if (e.target.id === 'dismiss_password_warning') this.dismissPasswordRecoveryWarning();
+    });
   }
 
   checkPasswordRecoveryEmail() {
-    // If password recovery email is registered for the account, don't check again for a month
-    if (this.wasLastVerified(30 * 24 * 60 * 60 * 1000)) {
-      return;
-    }
+    if (this.wasLastVerified(30 * 24 * 60 * 60 * 1000)) return;
+    if (this.isPasswordRecoveryDismissed()) return;
 
-    // Check if user has dismissed the warning within the last 84 hours
-    if (this.isPasswordRecoveryDismissed()) {
-      return;
-    }
-
-    $.ajax('/api/winlink-account/password-recovery-email', {
-      type: 'GET',
-      timeout: 20000,
-      success: (data) => {
+    fetch('/api/winlink-account/password-recovery-email')
+      .then(res => {
+        if (!res.ok) throw new Error('Check failed');
+        return res.json();
+      })
+      .then(data => {
         if (!data.recovery_email || data.recovery_email.trim() === '') {
           this.showPasswordRecoveryWarning();
           this.statusPopover.show();
@@ -33,31 +30,22 @@ export class PasswordRecovery {
           this.setLastVerified();
           this.hidePasswordRecoveryWarning();
         }
-      },
-      error: (xhr, status, error) => {
-        // Log errors silently to console - this request may fail offline
-        console.log('Password recovery email check failed (expected when offline):', {
-          status: status,
-          error: error,
-          responseText: xhr.responseText
-        });
-      }
-    });
+      })
+      .catch(err => console.log('Password recovery email check failed (expected when offline):', err));
   }
 
   showPasswordRecoveryWarning() {
     if (this.warningSection) return;
 
-    const body = $(`
-        <div>
-            <p>You have no recovery email set for your Winlink account.</p>
-            <p>Add one now so you can easily reset a forgotten password.</p>
-            <div class="btn-group pull-right" style="margin-top: 10px;">
-                <button type="button" class="btn btn-sm btn-default" id="dismiss_password_warning">Later</button>
-                <button type="button" class="btn btn-sm btn-primary" id="fix-now-btn">Add Email</button>
-            </div>
-        </div>
-    `);
+    const body = document.createElement('div');
+    body.innerHTML = `
+      <p class="mb-1">You have no recovery email set for your Winlink account.</p>
+      <p class="small text-muted mb-3">Add one now so you can easily reset a forgotten password.</p>
+      <div class="d-flex justify-content-end gap-2">
+        <button type="button" class="btn btn-sm btn-outline-light" id="dismiss_password_warning">Later</button>
+        <button type="button" class="btn btn-sm btn-light" id="fix-now-btn">Add Email</button>
+      </div>
+    `;
 
     this.warningSection = this.statusPopover.addSection({
       severity: 'warning',
@@ -67,16 +55,13 @@ export class PasswordRecovery {
   }
 
   hidePasswordRecoveryWarning() {
-    if (!this.warningSection) {
-      return;
-    }
+    if (!this.warningSection) return;
     this.statusPopover.removeSection(this.warningSection);
     this.warningSection = null;
   }
 
   dismissPasswordRecoveryWarning() {
-    const dismissTime = Date.now();
-    const dismissUntil = dismissTime + (84 * 60 * 60 * 1000); // 84 hours
+    const dismissUntil = Date.now() + (84 * 60 * 60 * 1000);
     localStorage.setItem(`passwordRecoveryDismissed_${this.mycall}`, dismissUntil.toString());
     this.hidePasswordRecoveryWarning();
   }
@@ -102,69 +87,61 @@ export class PasswordRecovery {
       message: 'Recovery Email Address',
       body: `
         <p>Please enter your recovery email address. This will be used to recover your password if you forget it.</p>
-        <div class="form-group">
+        <div class="mb-3">
           <input type="email" class="form-control" id="recoveryEmail" placeholder="Enter your recovery email">
         </div>
-        <div id="recovery-error" class="text-danger" style="display: none;"></div>
-          <small class="form-text text-muted">
-            By submitting, your email address will be sent directly to winlink.org. Their privacy policy will apply. See <a href="https://winlink.org/terms_conditions" target="_blank">Winlink's Privacy Policy</a>.
-          </small>      `,
+        <div id="recovery-error" class="alert alert-danger d-none py-2 px-3 small"></div>
+        <small class="form-text text-muted">
+          By submitting, your email address will be sent directly to winlink.org. See <a href="https://winlink.org/terms_conditions" target="_blank">Winlink's Privacy Policy</a>.
+        </small>
+      `,
       buttons: [
         {
           text: 'Cancel',
           class: 'btn-secondary',
-          onClick: () => {
-            this.promptModal.hide();
-          }
+          onClick: () => this.promptModal.hide()
         },
         {
           text: 'Submit',
           class: 'btn-primary',
           close: false,
           onClick: (event) => {
-            const saveButton = $(event.target);
-            const email = $('#recoveryEmail').val();
-            const errorContainer = $('#recovery-error');
+            const saveButton = event.currentTarget;
+            const email = document.getElementById('recoveryEmail').value;
+            const errorContainer = document.getElementById('recovery-error');
 
-            // Prepend icon on first click
-            if (saveButton.find('span.glyphicon').length === 0) {
-              saveButton.prepend('<span class="glyphicon" style="margin-right: 5px; vertical-align: text-bottom;"></span>');
-            }
-            const icon = saveButton.find('span.glyphicon');
+            saveButton.disabled = true;
+            saveButton.innerHTML = '<i class="bi bi-arrow-repeat icon-spin me-1"></i> Submitting...';
+            if (errorContainer) errorContainer.classList.add('d-none');
 
-            // The button's text is the last node
-            const textNode = saveButton.contents().last()[0];
-
-            saveButton.prop('disabled', true);
-            icon.attr('class', 'glyphicon glyphicon-refresh icon-spin');
-            textNode.textContent = ' Submitting...';
-            errorContainer.hide();
-
-            $.ajax('/api/winlink-account/password-recovery-email', {
-              type: 'PUT',
-              data: JSON.stringify({ recovery_email: email }),
-              contentType: 'application/json',
-              timeout: 20000,
-              success: () => {
-                icon.attr('class', 'glyphicon glyphicon-ok');
-                textNode.textContent = ' Submitted';
+            fetch('/api/winlink-account/password-recovery-email', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ recovery_email: email })
+            })
+            .then(async res => {
+              if (res.ok) {
+                saveButton.innerHTML = '<i class="bi bi-check-lg me-1"></i> Submitted';
                 this.hidePasswordRecoveryWarning();
-                setTimeout(() => {
-                  this.promptModal.hide();
-                }, 5000);
-              },
-              error: (xhr) => {
-                let errorMessage = 'An unknown error occurred.';
-                if (xhr.responseJSON && xhr.responseJSON.error) {
-                  errorMessage = xhr.responseJSON.error;
-                } else if (xhr.responseText) {
-                  errorMessage = xhr.responseText;
+                setTimeout(() => this.promptModal.hide(), 2000);
+              } else {
+                const data = await res.json().catch(() => ({}));
+                const msg = data.error || await res.text() || 'An unknown error occurred.';
+                if (errorContainer) {
+                  errorContainer.textContent = msg;
+                  errorContainer.classList.remove('d-none');
                 }
-                errorContainer.html(errorMessage).show();
-                saveButton.prop('disabled', false);
-                icon.remove();
-                textNode.textContent = ' Retry';
+                saveButton.disabled = false;
+                saveButton.textContent = 'Retry';
               }
+            })
+            .catch(err => {
+              if (errorContainer) {
+                errorContainer.textContent = err.message;
+                errorContainer.classList.remove('d-none');
+              }
+              saveButton.disabled = false;
+              saveButton.textContent = 'Retry';
             });
           }
         }
@@ -172,4 +149,3 @@ export class PasswordRecovery {
     });
   }
 }
-

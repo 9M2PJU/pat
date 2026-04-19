@@ -1,376 +1,317 @@
 import { alert, isImageSuffix, formatFileSize, formXmlToFormName, setCookie, deleteCookie } from '../utils/index.js';
-
-const tokenfieldConfig = {
-  delimiter: [',', ';', ' '], // Must be in sync with SplitFunc (utils.go)
-  inputType: 'email',
-  createTokensOnBlur: true,
-};
+import * as bootstrap from 'bootstrap';
 
 export class Composer {
   constructor(mycall) {
     this.mycall = mycall;
     this.pollTimer = null;
+    this.ws = null;
+    this.modalEl = null;
+    this.modalInstance = null;
   }
-
-  startPolling() {
-    setCookie('forminstance', Math.floor(Math.random() * 1000000000), 1);
-    this._poll();
-  }
-
-  _forgetPolling() {
-    window.clearTimeout(this.pollTimer);
-    deleteCookie('forminstance');
-  }
-
-  _poll() {
-    $.ajax({
-      method: 'GET',
-      url: '/api/form',
-      dataType: 'json',
-      success: (data) => {
-        // TODO: Should verify forminstance key in case of multi-user scenario
-        console.log('done polling');
-        console.log(data);
-        if (!$('#composer').hasClass('hidden')) {
-          this._writeToComposer(data);
-        }
-      },
-      error: () => {
-        if (!$('#composer').hasClass('hidden')) {
-          // TODO: Consider replacing this polling mechanism with a WS message (push)
-          this.pollTimer = window.setTimeout(this._poll.bind(this), 1000);
-        }
-      },
-    });
-  }
-
-  _writeToComposer(data) {
-    $('#msg_body').val(data.msg_body);
-    if (data.msg_to) {
-      $('#msg_to').tokenfield('setTokens', data.msg_to.split(/[ ;,]/).filter(Boolean));
-    }
-    if (data.msg_cc) {
-      $('#msg_cc').tokenfield('setTokens', data.msg_cc.split(/[ ;,]/).filter(Boolean));
-    }
-    if (data.msg_subject) {
-      // in case of composing a form-based reply we keep the 'Re: ...' subject line
-      $('#msg_subject').val(data.msg_subject);
-    }
-  }
-
-
 
   init() {
-    $('#compose_btn').click((evt) => {
-      this.close(true); // Clear everything when opening a new compose
-      $('#composer').modal('toggle');
-    });
+    this.modalEl = document.getElementById('composer');
+    if (!this.modalEl) return;
+    this.modalInstance = new bootstrap.Modal(this.modalEl);
 
-    $('#msg_to').tokenfield(tokenfieldConfig);
-    $('#msg_cc').tokenfield(tokenfieldConfig);
-    $('#composer').on('change', '.btn-file :file', this._handleFileSelection.bind(this));
-    $('#composer').on('hidden.bs.modal', this._forgetPolling.bind(this));
-
-    $('#composer_error').hide();
-
-    $('#compose_cancel').click((evt) => {
+    document.getElementById('compose_btn')?.addEventListener('click', () => {
       this.close(true);
+      this.modalInstance.show();
     });
 
-    $('#composer_form').submit((e) => {
-      const form = $('#composer_form');
-      const formData = new FormData(form[0]);
+    this.modalEl.querySelector('.btn-file :first-child')?.addEventListener('change', this._handleFileSelection.bind(this));
+    this.modalEl.addEventListener('hidden.bs.modal', this._forgetPolling.bind(this));
+
+    const errorEl = document.getElementById('composer_error');
+    if (errorEl) errorEl.classList.add('d-none');
+
+    document.getElementById('composer_form')?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const form = e.target;
+      const formData = new FormData(form);
 
       const d = new Date().toJSON();
       formData.append('date', d);
 
-      // Add in-reply-to header if present
-      const inReplyTo = $('#composer').data('in-reply-to');
+      const inReplyTo = this.modalEl.dataset.inReplyTo;
       if (inReplyTo) {
         formData.append('in_reply_to', inReplyTo);
       }
 
-      // Set some defaults that makes the message pass validation
-      if ($('#msg_body').val().length == 0) {
-        $('#msg_body').val('<No message body>');
-      }
-      if ($('#msg_subject').val().length == 0) {
-        $('#msg_subject').val('<No subject>');
-      }
+      const bodyEl = document.getElementById('msg_body');
+      const subjectEl = document.getElementById('msg_subject');
 
-      $.ajax({
-        url: '/api/mailbox/out',
+      if (bodyEl.value.length === 0) bodyEl.value = '<No message body>';
+      if (subjectEl.value.length === 0) subjectEl.value = '<No subject>';
+
+      fetch('/api/mailbox/out', {
         method: 'POST',
-        data: formData,
-        processData: false,
-        contentType: false,
-        success: (result) => {
-          // Clear stored files data
-          $('#msg_attachments_input')[0].dataset.storedFiles = '[]';
-          $('#composer').modal('hide');
+        body: formData
+      })
+      .then(async response => {
+        const text = await response.text();
+        if (response.ok) {
+          const attachmentsInput = document.getElementById('msg_attachments_input');
+          if (attachmentsInput) attachmentsInput.dataset.storedFiles = '[]';
+          this.modalInstance.hide();
           this.close(true);
-          alert(result);
-        },
-        error: (error) => {
-          $('#composer_error').html(error.responseText);
-          $('#composer_error').show();
-        },
+          alert(text);
+        } else {
+          if (errorEl) {
+            errorEl.textContent = text;
+            errorEl.classList.remove('d-none');
+          }
+        }
+      })
+      .catch(err => {
+        console.error('Submit failed', err);
+        if (errorEl) {
+          errorEl.textContent = 'Submission failed. See console.';
+          errorEl.classList.remove('d-none');
+        }
       });
-      e.preventDefault();
     });
+  }
+
+  startPolling() {
+    setCookie('forminstance', Math.floor(Math.random() * 1000000000), 1);
+    this._connectWebSocket();
+  }
+
+  _forgetPolling() {
+    window.clearTimeout(this.pollTimer);
+    if (this.ws) {
+      this.ws.close();
+      this.ws = null;
+    }
+    deleteCookie('forminstance');
+  }
+
+  _connectWebSocket() {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = protocol + '//' + window.location.host + '/ws/form';
+    
+    this.ws = new WebSocket(wsUrl);
+    
+    this.ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (!this.modalEl.classList.contains('d-none')) {
+        this._writeToComposer(data);
+      }
+      this.ws.close();
+    };
+    
+    this.ws.onerror = () => {
+      if (!this.modalEl.classList.contains('d-none')) {
+        this.pollTimer = window.setTimeout(this._connectWebSocket.bind(this), 1000);
+      }
+    };
+  }
+
+  _writeToComposer(data) {
+    document.getElementById('msg_body').value = data.msg_body || '';
+    if (data.msg_to) document.getElementById('msg_to').value = data.msg_to;
+    if (data.msg_cc) document.getElementById('msg_cc').value = data.msg_cc;
+    if (data.msg_subject) document.getElementById('msg_subject').value = data.msg_subject;
   }
 
   close(clear) {
     if (clear) {
-      $('#composer_error').val('').hide();
-      $('#msg_body').val('');
-      $('#msg_subject').val('');
-      $('#msg_to').tokenfield('setTokens', []);
-      $('#msg_cc').tokenfield('setTokens', []);
-      $('#composer_form')[0].reset();
-      $('#composer').removeData('in-reply-to');
+      const errorEl = document.getElementById('composer_error');
+      if (errorEl) {
+        errorEl.textContent = '';
+        errorEl.classList.add('d-none');
+      }
+      document.getElementById('msg_body').value = '';
+      document.getElementById('msg_subject').value = '';
+      document.getElementById('msg_to').value = '';
+      document.getElementById('msg_cc').value = '';
+      document.getElementById('composer_form').reset();
+      delete this.modalEl.dataset.inReplyTo;
 
-      // Attachment previews
-      $('#composer_attachments').empty();
+      document.getElementById('composer_attachments').innerHTML = '';
 
-      // Attachment input field
-      let attachments = $('#msg_attachments_input');
-      attachments[0].dataset.storedFiles = '[]';
-      attachments.replaceWith((attachments = attachments.clone(true)));
+      const attachmentsInput = document.getElementById('msg_attachments_input');
+      if (attachmentsInput) attachmentsInput.dataset.storedFiles = '[]';
     }
-    $('#composer').modal('hide');
+    this.modalInstance.hide();
   }
 
-  _handleFileSelection() {
-    const fileInput = $('#msg_attachments_input')[0];
+  _handleFileSelection(e) {
+    const fileInput = e.target;
     const dt = new DataTransfer();
     let storedFiles = [];
     let filesProcessed = 0;
     const totalFiles = fileInput.files.length;
 
-    // Get previously stored files from data attribute
     try {
       storedFiles = JSON.parse(fileInput.dataset.storedFiles || '[]');
-
-      // First add all previously stored files to DataTransfer
       storedFiles.forEach(fileInfo => {
         const byteString = atob(fileInfo.content.split(',')[1]);
         const ab = new ArrayBuffer(byteString.length);
         const ia = new Uint8Array(ab);
-        for (let i = 0; i < byteString.length; i++) {
-          ia[i] = byteString.charCodeAt(i);
-        }
+        for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
         const blob = new Blob([ab], { type: fileInfo.type });
         const file = new File([blob], fileInfo.name, { type: fileInfo.type });
         dt.items.add(file);
       });
-    } catch (e) {
-      console.error("Error parsing stored files:", e);
-    }
+    } catch (e) { console.error("Error parsing stored files:", e); }
 
-    // Process newly selected files
+    if (totalFiles === 0) return;
+
     Array.from(fileInput.files).forEach(file => {
       const reader = new FileReader();
-      reader.onload = (e) => {
-        // Add to stored files array
+      reader.onload = (re) => {
         storedFiles.push({
           name: file.name,
           type: file.type,
-          content: e.target.result
+          content: re.target.result
         });
-
-        // Update dataset
         fileInput.dataset.storedFiles = JSON.stringify(storedFiles);
-
-        // Add to DataTransfer
         dt.items.add(file);
-
         filesProcessed++;
-
-        // Only update input files and preview when ALL files are processed
         if (filesProcessed === totalFiles) {
           fileInput.files = dt.files;
-          this._previewAttachmentFiles.call(fileInput);
+          this._previewAttachmentFiles(fileInput);
         }
       };
       reader.readAsDataURL(file);
     });
   }
 
-  _previewAttachmentFiles() {
-    const attachments = $('#composer_attachments');
-    attachments.empty();
+  _previewAttachmentFiles(fileInput) {
+    const attachmentsContainer = document.getElementById('composer_attachments');
+    attachmentsContainer.innerHTML = '';
 
-    // Add a row container
-    const row = $('<div class="row"></div>');
-    attachments.append(row);
-
-    for (let i = 0; i < this.files.length; i++) {
-      const file = this.files[i];
-
-      const col = $('<div class="col-xs-6 col-md-3"></div>');
-      const link = $('<a class="attachment-preview"></a>');
-
-      // Add remove button - append it directly to avoid event binding issues
-      const removeBtn = $('<button type="button" class="close remove-attachment" aria-label="Remove">' +
-        '<span aria-hidden="true">&times;</span></button>');
-      removeBtn.click((e) => {
+    Array.from(fileInput.files).forEach((file, index) => {
+      const col = document.createElement('div');
+      col.className = 'col-6 col-md-3';
+      
+      const card = document.createElement('div');
+      card.className = 'attachment-preview card h-100';
+      
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.className = 'btn-close';
+      removeBtn.ariaLabel = 'Remove';
+      removeBtn.addEventListener('click', (e) => {
         e.preventDefault();
-        e.stopPropagation(); // Prevent event from bubbling up
-
-        const filenameToRemove = file.name;
-
-        // Remove file from DataTransfer
         const dt = new DataTransfer();
-        for (let i = 0; i < this.files.length; i++) {
-          if (this.files[i].name !== filenameToRemove) {
-            dt.items.add(this.files[i]);
-          }
-        }
-        this.files = dt.files;
+        const files = Array.from(fileInput.files);
+        files.splice(index, 1);
+        files.forEach(f => dt.items.add(f));
+        fileInput.files = dt.files;
 
-        // Also remove from our persistent storage (dataset.storedFiles)
-        let storedFiles = JSON.parse(this.dataset.storedFiles || '[]');
-        storedFiles = storedFiles.filter(f => f.name !== filenameToRemove);
-        this.dataset.storedFiles = JSON.stringify(storedFiles);
+        let stored = JSON.parse(fileInput.dataset.storedFiles || '[]');
+        stored.splice(index, 1);
+        fileInput.dataset.storedFiles = JSON.stringify(stored);
 
-        // Remove preview
-        col.remove();
+        this._previewAttachmentFiles(fileInput);
       });
 
+      card.appendChild(removeBtn);
+      
+      const sizeSpan = document.createElement('span');
+      sizeSpan.className = 'filesize';
+      sizeSpan.textContent = formatFileSize(file.size);
+      card.appendChild(sizeSpan);
+
       if (isImageSuffix(file.name)) {
+        const img = document.createElement('img');
+        img.className = 'img-fluid mt-2 rounded';
         const reader = new FileReader();
-        reader.onload = function(e) {
-          link.empty() // Clear any existing content
-            .append(removeBtn)
-            .append($('<span class="filesize">').text(formatFileSize(file.size)))
-            .append($('<img>').attr({
-              src: e.target.result,
-              alt: file.name
-            }));
-        };
+        reader.onload = (re) => { img.src = re.target.result; };
         reader.readAsDataURL(file);
+        card.appendChild(img);
       } else {
-        link.empty() // Clear any existing content
-          .append(removeBtn)
-          .append($('<span class="filesize">').text(formatFileSize(file.size)))
-          .append('<br>')
-          .append($('<span class="filename">').text(file.name));
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'filename mt-2 d-block small text-truncate';
+        nameSpan.textContent = file.name;
+        card.appendChild(nameSpan);
       }
 
-      col.append(link);
-      row.append(col);
-    }
+      col.appendChild(card);
+      attachmentsContainer.appendChild(col);
+    });
   }
 
   _reAttachFiles(msg_url, files) {
-    $('#composer_attachments').empty();
-    const fileInput = $('#msg_attachments_input')[0];
+    const fileInput = document.getElementById('msg_attachments_input');
     const dt = new DataTransfer();
+    if (!files) return;
 
-    if (files) {
-      let filesProcessed = 0;
-      files.forEach(file => {
-        $.ajax({
-          url: msg_url + '/' + file.Name,
-          method: 'GET',
-          xhrFields: {
-            responseType: 'blob'
-          },
-          success: (blob) => {
-            const f = new File([blob], file.Name, { type: blob.type });
-            dt.items.add(f);
-            filesProcessed++;
-
-            if (filesProcessed === files.length) {
-              fileInput.files = dt.files;
-              this._previewAttachmentFiles.call(fileInput);
-            }
+    let filesProcessed = 0;
+    files.forEach(file => {
+      fetch(msg_url + '/' + file.Name)
+        .then(res => res.blob())
+        .then(blob => {
+          const f = new File([blob], file.Name, { type: blob.type });
+          dt.items.add(f);
+          filesProcessed++;
+          if (filesProcessed === files.length) {
+            fileInput.files = dt.files;
+            this._previewAttachmentFiles(fileInput);
           }
         });
-      });
-    }
+    });
   }
 
   reply(folder, data, replyAll) {
-    $('#message_view').modal('hide');
+    this.close(true);
+    document.getElementById('msg_to').value = data.From.Addr;
+    document.getElementById('msg_cc').value = (replyAll ? this._replyCarbonCopyList(data) : []).join(', ');
+    
+    let subject = data.Subject;
+    if (subject.lastIndexOf('Re:', 0) !== 0) subject = 'Re: ' + subject;
+    document.getElementById('msg_subject').value = subject;
+    
+    const body = document.getElementById('msg_body');
+    body.value = '\n\n' + this._quoteMsg(data);
+    this.modalEl.dataset.inReplyTo = folder + '/' + data.MID;
+    this.modalInstance.show();
+    
+    body.focus();
+    body.setSelectionRange(0, 0);
 
-    $('#msg_to').tokenfield('setTokens', [data.From.Addr]);
-    $('#msg_cc').tokenfield('setTokens', replyAll ? this._replyCarbonCopyList(data) : []);
-    if (data.Subject.lastIndexOf('Re:', 0) != 0) {
-      $('#msg_subject').val('Re: ' + data.Subject);
-    } else {
-      $('#msg_subject').val(data.Subject);
-    }
-    $('#msg_body').val('\n\n' + this._quoteMsg(data));
-    $('#composer').data('in-reply-to', folder + '/' + data.MID);
-    $('#composer').modal('show');
-    $('#msg_body').focus();
-    $('#msg_body')[0].setSelectionRange(0, 0);
-
-    // opens browser window for a form-based reply,
-    // or does nothing if this is not a form-based message
     this._showReplyForm(folder, data.MID, data);
   }
 
   forward(folder, data) {
-    $('#message_view').modal('hide');
+    this.close(true);
+    document.getElementById('msg_to').value = '';
+    document.getElementById('msg_subject').value = 'Fw: ' + data.Subject;
+    const body = document.getElementById('msg_body');
+    body.value = this._quoteMsg(data);
+    body.setSelectionRange(0, 0);
 
-    $('#msg_to').tokenfield('setTokens', '');
-    $('#msg_subject').val('Fw: ' + data.Subject);
-    $('#msg_body').val(this._quoteMsg(data));
-    $('#msg_body')[0].setSelectionRange(0, 0);
-
-    // Add attachments
     this._reAttachFiles(this._buildMessagePath(folder, data.MID), data.Files);
-
-    $('#composer').modal('show');
-    $('#msg_to-tokenfield').focus();
+    this.modalInstance.show();
   }
 
   editAsNew(folder, data) {
-    $('#message_view').modal('hide');
+    this.close(true);
+    document.getElementById('msg_to').value = data.To.map(r => r.Addr).join(', ');
+    document.getElementById('msg_cc').value = (data.Cc || []).map(r => r.Addr).join(', ');
+    document.getElementById('msg_subject').value = data.Subject;
+    document.getElementById('msg_body').value = data.Body;
+    document.getElementById('msg_body').setSelectionRange(0, 0);
 
-    $('#msg_to').tokenfield('setTokens', data.To.map(function(recipient) { return recipient.Addr; }));
-    $('#msg_cc').tokenfield('setTokens', data.Cc ? data.Cc.map(function(recipient) { return recipient.Addr; }) : []);
-    $('#msg_subject').val(data.Subject);
-    $('#msg_body').val(data.Body);
-    $('#msg_body')[0].setSelectionRange(0, 0);
-
-    // Add attachments
     this._reAttachFiles(this._buildMessagePath(folder, data.MID), data.Files);
-
-    $('#composer').modal('show');
-    $('#msg_to-tokenfield').focus();
+    this.modalInstance.show();
   }
 
   _quoteMsg(data) {
-    let output = '--- ' + data.Date + ' ' + data.From.Addr + ' wrote: ---\n';
-
-    const lines = data.Body.split('\n');
-    for (let i = 0; i < lines.length; i++) {
-      output += '>' + lines[i] + '\n';
-    }
+    let output = `--- ${data.Date} ${data.From.Addr} wrote: ---\n`;
+    output += data.Body.split('\n').map(line => '>' + line).join('\n');
     return output;
   }
 
   _replyCarbonCopyList(msg) {
-    let addrs = msg.To;
-    if (msg.Cc != null && msg.Cc.length > 0) {
-      addrs = addrs.concat(msg.Cc);
-    }
-    const seen = {};
-    seen[this.mycall] = true;
-    seen[msg.From.Addr] = true;
-    const strings = [];
-    for (let i = 0; i < addrs.length; i++) {
-      if (seen[addrs[i].Addr]) {
-        continue;
-      }
-      seen[addrs[i].Addr] = true;
-      strings.push(addrs[i].Addr);
-    }
-    return strings;
+    let addrs = [...msg.To];
+    if (msg.Cc) addrs = [...addrs, ...msg.Cc];
+    const seen = { [this.mycall]: true, [msg.From.Addr]: true };
+    return addrs.filter(a => !seen[a.Addr] && (seen[a.Addr] = true)).map(a => a.Addr);
   }
 
   _showReplyForm(folder, mid, msg) {
@@ -378,33 +319,20 @@ export class Composer {
     for (let i = 0; msg.Files && i < msg.Files.length; i++) {
       const file = msg.Files[i];
       const formName = formXmlToFormName(file.Name);
-      if (!formName) {
-        continue;
-      }
-      // retrieve form XML attachment and determine if it specifies a form-based reply
-      const attachUrl = orgMsgUrl + '/' + file.Name;
-      $.get(
-        attachUrl + '?rendertohtml=false',
-        {},
-        (data) => {
-          let parser = new DOMParser();
-          let xmlDoc = parser.parseFromString(data, 'text/xml');
+      if (!formName) continue;
+
+      fetch(orgMsgUrl + '/' + file.Name + '?rendertohtml=false')
+        .then(res => res.text())
+        .then(data => {
+          let xmlDoc = new DOMParser().parseFromString(data, 'text/xml');
           if (xmlDoc) {
-            let replyTmpl = xmlDoc.evaluate(
-              '/RMS_Express_Form/form_parameters/reply_template',
-              xmlDoc,
-              null,
-              XPathResult.STRING_TYPE,
-              null
-            );
+            let replyTmpl = xmlDoc.evaluate('/RMS_Express_Form/form_parameters/reply_template', xmlDoc, null, XPathResult.STRING_TYPE, null);
             if (replyTmpl && replyTmpl.stringValue) {
               window.setTimeout(() => this.startPolling(), 500);
-              open(attachUrl + '?rendertohtml=true&in-reply-to=' + encodeURIComponent(folder + '/' + mid));
+              window.open(orgMsgUrl + '/' + file.Name + '?rendertohtml=true&in-reply-to=' + encodeURIComponent(folder + '/' + mid));
             }
           }
-        },
-        'text'
-      );
+        });
       return;
     }
   }

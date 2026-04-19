@@ -3,37 +3,44 @@ import { htmlEscape } from '../utils/index.js';
 export class ProgressBar {
   constructor() {
     this.cancelCloseTimer = false;
+    this.progressBarEl = null;
   }
 
   init() {
-    this.progressBar = $('#navbar_progress');
+    this.progressBarEl = document.getElementById('navbar_progress');
   }
 
   update(p) {
+    if (!this.progressBarEl) return;
     this.cancelCloseTimer = !p.done;
+
+    const textEl = this.progressBarEl.querySelector('.progress-text');
+    const barEl = this.progressBarEl.querySelector('.progress-bar');
 
     if (p.receiving || p.sending) {
       const percent = Math.ceil((p.bytes_transferred * 100) / p.bytes_total);
       const op = p.receiving ? 'Receiving' : 'Sending';
-      let text = op + ' ' + p.mid + ' (' + p.bytes_total + ' bytes)';
+      let text = `${op} ${p.mid} (${p.bytes_total} bytes)`;
       if (p.subject) {
         text += ' - ' + htmlEscape(p.subject);
       }
-      this.progressBar.find('.progress-text').text(text);
-      this.progressBar
-        .find('.progress-bar')
-        .css('width', percent + '%')
-        .text(percent + '%');
+      if (textEl) textEl.textContent = text;
+      if (barEl) {
+        barEl.style.width = percent + '%';
+        barEl.textContent = percent + '%';
+      }
     }
 
-    if (this.progressBar.is(':visible') && p.done) {
+    const isVisible = !this.progressBarEl.classList.contains('d-none');
+
+    if (isVisible && p.done) {
       window.setTimeout(() => {
         if (!this.cancelCloseTimer) {
-          this.progressBar.fadeOut(500);
+          this.progressBarEl.classList.add('d-none');
         }
       }, 3000);
     } else if ((p.receiving || p.sending) && !p.done) {
-      this.progressBar.show();
+      this.progressBarEl.classList.remove('d-none');
     }
   }
 }

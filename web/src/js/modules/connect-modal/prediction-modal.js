@@ -1,33 +1,25 @@
-import $ from 'jquery';
+import * as bootstrap from 'bootstrap';
 
 class PredictionModal {
   constructor() {
     this.modalId = 'rawDataModal';
+    this.modalInstance = null;
   }
 
-  /**
-   * Show a modal with the raw prediction output
-   * @param {string} callsign - The station callsign
-   * @param {string} rawOutput - The raw prediction output text
-   */
   show(callsign, rawOutput) {
     if (!rawOutput) {
       return;
     }
 
-    // Remove any existing modal
     this.remove();
 
-    // Create modal with scrollable content
-    let modalHtml =
-      `<div class="modal fade" id="${this.modalId}" tabindex="-1" role="dialog">
+    const modalHtml = `
+      <div class="modal fade" id="${this.modalId}" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg">
           <div class="modal-content">
             <div class="modal-header">
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-              </button>
-              <h4 class="modal-title">Propagation Prediction Details: ${callsign}</h4>
+              <h5 class="modal-title">Propagation Prediction Details: ${callsign}</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
               <div style="overflow: auto;">
@@ -35,24 +27,31 @@ class PredictionModal {
               </div>
             </div>
             <div class="modal-footer">
-              <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
           </div>
         </div>
       </div>`;
 
-    // Add the modal to the body
-    $('body').append(modalHtml);
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    const modalEl = document.getElementById(this.modalId);
+    this.modalInstance = new bootstrap.Modal(modalEl);
+    this.modalInstance.show();
 
-    // Show the modal
-    $(`#${this.modalId}`).modal('show');
+    modalEl.addEventListener('hidden.bs.modal', () => {
+        this.remove();
+    });
   }
 
-  /**
-   * Remove the modal from the DOM
-   */
   remove() {
-    $(`#${this.modalId}`).remove();
+    const existing = document.getElementById(this.modalId);
+    if (existing) {
+        if (this.modalInstance) {
+            this.modalInstance.dispose();
+            this.modalInstance = null;
+        }
+        existing.remove();
+    }
   }
 }
 

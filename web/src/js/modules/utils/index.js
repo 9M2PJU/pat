@@ -1,13 +1,27 @@
-import $ from 'jquery';
-
 export function alert(msg) {
-  const div = $('#navbar_status');
-  div.empty();
-  div.append('<span class="navbar-text status-text">' + msg + '</span>');
-  div.show();
-  window.setTimeout(function() {
-    div.fadeOut(500);
-  }, 5000);
+  const container = document.getElementById('navbar_status');
+  if (!container) return;
+
+  const alertDiv = document.createElement('div');
+  alertDiv.className = 'alert alert-info alert-dismissible fade show py-2 px-3 mb-0 rounded-0 small d-flex align-items-center shadow-sm';
+  alertDiv.role = 'alert';
+  alertDiv.innerHTML = `
+    <i class="bi bi-info-circle-fill me-2"></i>
+    <span>${msg}</span>
+    <button type="button" class="btn-close py-2" data-bs-dismiss="alert" aria-label="Close"></button>
+  `;
+  
+  container.innerHTML = '';
+  container.appendChild(alertDiv);
+  container.style.display = 'block';
+
+  // Auto-dismiss after 8 seconds
+  setTimeout(() => {
+    if (alertDiv.parentNode) {
+      const bsAlert = new bootstrap.Alert(alertDiv);
+      bsAlert.close();
+    }
+  }, 8000);
 }
 
 export function isInsecureOrigin() {
@@ -53,7 +67,9 @@ export function dateFormat(previous) {
 }
 
 export function htmlEscape(str) {
-  return $('<div></div>').text(str).html();
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
 }
 
 export function isImageSuffix(name) {

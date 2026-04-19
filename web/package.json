@@ -10,8 +10,7 @@
     "url": "git+https://github.com/la5nta/pat.git"
   },
   "engines": {
-    "node": "18",
-    "npm": "10"
+    "node": ">=18"
   },
   "bugs": {
     "url": "https://github.com/la5nta/pat/issues"
@@ -28,36 +27,22 @@
     "ardop"
   ],
   "scripts": {
-    "build": "webpack --mode=development --progress --hide-modules",
-    "clear": "del-cli dist",
+    "build": "vite build",
+    "dev": "vite",
+    "preview": "vite preview",
+    "clear": "rm -rf dist",
     "format": "prettier -w **",
-    "production": "webpack --mode=production --progress --hide-modules --devtool=source-maps",
-    "postinstall": "rm -rf node_modules/bootstrap-tokenfield/node_modules",
-    "start": "webpack-dev-server --mode=development --port=8081",
-    "watch": "webpack --mode=development --watch"
+    "production": "vite build"
   },
   "dependencies": {
-    "bootstrap": "3.2.0",
-    "bootstrap-select": "1.7.5",
-    "bootstrap-tokenfield": "0.12.0",
-    "jquery": "3.6.0",
-    "urijs": "1.19.10"
+    "bootstrap": "^5.3.3",
+    "bootstrap-icons": "^1.13.1",
+    "lodash": "^4.17.21",
+    "urijs": "^1.19.11"
   },
   "devDependencies": {
-    "clean-webpack-plugin": "^3.0.0",
-    "copy-webpack-plugin": "^5.1.2",
-    "css-loader": "^2.1.1",
-    "del-cli": "^3.0.1",
-    "mini-css-extract-plugin": "^0.7.0",
-    "optimize-css-assets-webpack-plugin": "^5.0.4",
-    "prettier": "^2.5.1",
-    "sass": "^1.60.0",
-    "sass-loader": "^7.3.1",
-    "style-loader": "^0.23.1",
-    "svg-url-loader": "^2.3.3",
-    "terser-webpack-plugin": "^4.2.3",
-    "webpack": "^4.44.2",
-    "webpack-cli": "^3.3.12",
-    "webpack-dev-server": "^3.11.0"
+    "prettier": "^3.2.5",
+    "sass": "^1.77.0",
+    "vite": "^5.2.11"
   }
 }

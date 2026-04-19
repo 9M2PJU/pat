@@ -4,3 +4,4 @@ pat*.pkg
 docker-data/
 .aider*
 *.swp
+.env

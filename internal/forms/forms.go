@@ -31,6 +31,7 @@ import (
 	"github.com/la5nta/wl2k-go/fbb"
 	"github.com/la5nta/wl2k-go/mailbox"
 
+	"github.com/gorilla/websocket"
 	"github.com/la5nta/pat/cfg"
 	"github.com/la5nta/pat/internal/debug"
 	"github.com/la5nta/pat/internal/directories"
@@ -239,7 +240,7 @@ func (m *Manager) PostFormDataHandler(mboxRoot string) http.HandlerFunc {
 	}
 }
 
-// GetFormDataHandler is the counterpart to PostFormDataHandler. Returns the form field values to the frontend
+// GetFormDataHandler is the counterpart to PostFormDataHandler. Returns the form field values to the frontend (Legacy Polling)
 func (m *Manager) GetFormDataHandler(w http.ResponseWriter, r *http.Request) {
 	formInstanceKey, err := r.Cookie("forminstance")
 	if err != nil {
@@ -253,6 +254,44 @@ func (m *Manager) GetFormDataHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	_ = json.NewEncoder(w).Encode(v)
+}
+
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+}
+
+// GetFormDataWSHandler provides a WebSocket connection for real-time form data pushing
+func (m *Manager) GetFormDataWSHandler(w http.ResponseWriter, r *http.Request) {
+	formInstanceKey, err := r.Cookie("forminstance")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		log.Printf("missing cookie %s %s", formInstanceKey, r.URL)
+		return
+	}
+
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Printf("websocket upgrade failed: %v", err)
+		return
+	}
+	defer conn.Close()
+
+	// Wait for form data and push it when available
+	for {
+		v, ok := m.GetPostedFormData(formInstanceKey.Value)
+		if ok {
+			if err := conn.WriteJSON(v); err != nil {
+				log.Printf("websocket write failed: %v", err)
+			}
+			// Delete after reading so it isn't repeatedly sent
+			m.postedFormData.mu.Lock()
+			delete(m.postedFormData.m, formInstanceKey.Value)
+			m.postedFormData.mu.Unlock()
+			break
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
 }
 
 // GetPostedFormData is similar to GetFormDataHandler, but used when posting the form-based message to the outbox

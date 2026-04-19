@@ -1,7 +1,4 @@
-import 'jquery';
-import 'bootstrap/dist/js/bootstrap';
-import 'bootstrap-select';
-import 'bootstrap-tokenfield';
+import * as bootstrap from 'bootstrap';
 
 import { alert } from './modules/utils/index.js';
 import { Version } from './modules/version/index.js';
@@ -38,9 +35,9 @@ let viewer;
 let progressBar;
 let statusText;
 
-$(function() {
-  wsURL = (location.protocol == 'https:' ? 'wss://' : 'ws://') + location.host + '/ws';
-  mycall = $('#mycall').text();
+document.addEventListener('DOMContentLoaded', function() {
+  wsURL = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws';
+  mycall = document.getElementById('mycall').textContent;
 
   statusPopover = new StatusPopover();
   statusPopover.init();
@@ -69,25 +66,30 @@ $(function() {
   statusText.init();
 
   // Setup folder navigation
-  $('a[data-folder]').on('click', (e) => {
-    const folder = $(e.currentTarget).data('folder');
-    mailbox.displayFolder(folder);
+  document.querySelectorAll('a[data-folder]').forEach(el => {
+    el.addEventListener('click', (e) => {
+      e.preventDefault();
+      const folder = e.currentTarget.dataset.folder;
+      mailbox.displayFolder(folder);
+      
+      // Update active state
+      document.querySelectorAll('.navbar-nav .nav-link').forEach(link => link.classList.remove('active'));
+      e.currentTarget.classList.add('active');
+    });
   });
 
-  // Highlight active tab (mailbox folder)
-  $('a[data-folder]').parent('li').on('click', (e) => {
-    $('.navbar li.active').removeClass('active');
-    const $this = $(e.currentTarget);
-    if (!$this.hasClass('active')) {
-      $this.addClass('active');
-    }
-    e.preventDefault();
-  });
-  $('.nav :not(.dropdown) a').on('click', () => {
-    if ($('.navbar-toggle').css('display') != 'none') {
-      $('.navbar-toggle').trigger('click');
-    }
-  });
+  // Auto-collapse navbar on click (mobile)
+  const navbarCollapse = document.getElementById('navbarCollapse');
+  if (navbarCollapse) {
+    const bsCollapse = new bootstrap.Collapse(navbarCollapse, { toggle: false });
+    document.querySelectorAll('.navbar-nav .nav-link:not(.dropdown-toggle)').forEach(link => {
+      link.addEventListener('click', () => {
+        if (window.getComputedStyle(navbarCollapse).display !== 'none' && navbarCollapse.classList.contains('show')) {
+          bsCollapse.hide();
+        }
+      });
+    });
+  }
 
   initWs();
   mailbox.displayFolder('in');
@@ -96,7 +98,6 @@ $(function() {
 
 function initWs() {
   if (!('WebSocket' in window)) {
-    // The browser doesn't support WebSocket
     alert('Websocket not supported by your browser, please upgrade your browser.');
     return;
   }
@@ -105,12 +106,14 @@ function initWs() {
   ws.onopen = () => {
     console.log('Websocket opened');
     statusPopover.hideWebsocketError();
-    statusPopover.showWebserverInfo(); // Content is updated by updateStatus
-    $('#console').empty();
+    statusPopover.showWebserverInfo();
+    const consoleEl = document.getElementById('console');
+    if (consoleEl) consoleEl.innerHTML = '';
     setTimeout(() => {
       passwordRecovery.checkPasswordRecoveryEmail();
     }, 3000);
   };
+
   ws.onmessage = function(evt) {
     const msg = JSON.parse(evt.data);
     if (msg.MyCall) {
@@ -127,13 +130,16 @@ function initWs() {
     }
     if (msg.Status) {
       if (configHash && configHash !== msg.Status.config_hash) {
-        if ($('#composer').is(':visible')) {
-          const div = $('#navbar_status');
-          div.empty();
-          div.append(
-            '<span class="navbar-text status-text text-warning"><span class="glyphicon glyphicon-warning-sign"></span> Configuration has changed, please <a href="#" onclick="location.reload()">reload the page</a>.</span>'
-          );
-          div.show();
+        const composerEl = document.getElementById('composer');
+        if (composerEl && composerEl.classList.contains('show')) {
+          const div = document.getElementById('navbar_status');
+          div.innerHTML = `
+            <div class="alert alert-warning py-1 px-3 mb-0 rounded-0 small d-flex align-items-center">
+              <i class="bi bi-exclamation-triangle-fill me-2"></i>
+              Configuration has changed, please <a href="#" class="alert-link ms-1" onclick="location.reload()">reload the page</a>.
+            </div>
+          `;
+          div.style.display = 'block';
         } else {
           console.log('Config hash changed, reloading page');
           location.reload();
@@ -142,8 +148,7 @@ function initWs() {
       configHash = msg.Status.config_hash;
       statusText.update(msg.Status);
       const n = msg.Status.http_clients.length;
-      statusPopover
-        .showWebserverInfo(n + (n == 1 ? ' client ' : ' clients ') + 'connected.');
+      statusPopover.showWebserverInfo(`${n} client${n === 1 ? '' : 's'} connected.`);
     }
     if (msg.Progress) {
       progressBar.update(msg.Progress);
@@ -161,11 +166,13 @@ function initWs() {
       ws.send(JSON.stringify({ Pong: true }));
     }
   };
+
   ws.onclose = () => {
     console.log('Websocket closed');
     statusPopover.showWebsocketError("WebSocket connection closed. Attempting to reconnect...");
     statusPopover.hideWebserverInfo();
-    $('#status_text').empty();
+    const statusTextEl = document.getElementById('status_text');
+    if (statusTextEl) statusTextEl.innerHTML = '';
     window.setTimeout(function() {
       initWs();
     }, 1000);
@@ -173,7 +180,11 @@ function initWs() {
 }
 
 function updateConsole(msg) {
-  const pre = $('#console');
-  pre.append('<span class="terminal">' + msg + '</span>');
-  pre.scrollTop(pre.prop('scrollHeight'));
+  const pre = document.getElementById('console');
+  if (!pre) return;
+  const span = document.createElement('span');
+  span.className = 'terminal';
+  span.textContent = msg;
+  pre.appendChild(span);
+  pre.scrollTop = pre.scrollHeight;
 }

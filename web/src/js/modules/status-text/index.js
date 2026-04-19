@@ -1,63 +1,84 @@
+import * as bootstrap from 'bootstrap';
+
 class StatusText {
   constructor(onReadyClick) {
     this.onReadyClick = onReadyClick;
-    this.statusText = null;
+    this.statusTextEl = null;
+    this.tooltipInstance = null;
   }
 
   init() {
-    this.statusText = $('#status_text');
+    this.statusTextEl = document.getElementById('status_text');
   }
 
   update(data) {
-    const st = this.statusText;
-    st.empty().off('click').attr('data-toggle', 'tooltip').attr('data-placement', 'bottom').tooltip();
+    if (!this.statusTextEl) return;
+    
+    // Dispose old tooltip
+    if (this.tooltipInstance) {
+      this.tooltipInstance.dispose();
+      this.tooltipInstance = null;
+    }
 
-    const onDisconnect = () => {
-      st.tooltip('hide');
+    this.statusTextEl.innerHTML = '';
+    const newStatusTextEl = this.statusTextEl.cloneNode(true);
+    this.statusTextEl.parentNode.replaceChild(newStatusTextEl, this.statusTextEl);
+    this.statusTextEl = newStatusTextEl;
+
+    const onDisconnect = (e) => {
+      e.preventDefault();
+      if (this.tooltipInstance) this.tooltipInstance.hide();
       this.disconnect(false, () => {
-        // This will be reset by the next updateStatus when the session is aborted
-        st.empty().append('Disconnecting... ');
-        // Issue dirty disconnect on second click
-        st.off('click').click(() => {
-          st.off('click');
+        this.statusTextEl.innerHTML = 'Disconnecting... ';
+        
+        const forceDisconnectHandler = (fe) => {
+          fe.preventDefault();
           this.disconnect(true);
-          st.tooltip('hide');
-        });
-        st.attr('title', 'Click to force disconnect').tooltip('fixTitle').tooltip('show');
+          if (this.tooltipInstance) this.tooltipInstance.hide();
+        };
+        
+        const forceBtn = this.statusTextEl.cloneNode(true);
+        this.statusTextEl.parentNode.replaceChild(forceBtn, this.statusTextEl);
+        this.statusTextEl = forceBtn;
+        this.statusTextEl.addEventListener('click', forceDisconnectHandler);
+        
+        this.statusTextEl.setAttribute('title', 'Click to force disconnect');
+        this.tooltipInstance = new bootstrap.Tooltip(this.statusTextEl);
+        this.tooltipInstance.show();
       });
     };
 
     if (data.dialing) {
-      st.append('Dialing... ');
-      st.click(onDisconnect);
-      st.attr('title', 'Click to abort').tooltip('fixTitle').tooltip('show');
+      this.statusTextEl.innerHTML = '<span class="text-warning">Dialing...</span> ';
+      this.statusTextEl.addEventListener('click', onDisconnect);
+      this.statusTextEl.setAttribute('title', 'Click to abort');
+      this.tooltipInstance = new bootstrap.Tooltip(this.statusTextEl);
     } else if (data.connected) {
-      st.append('Connected ' + data.remote_addr);
-      st.click(onDisconnect);
-      st.attr('title', 'Click to disconnect').tooltip('fixTitle').tooltip('hide');
+      this.statusTextEl.innerHTML = '<span class="text-success">Connected</span> ' + (data.remote_addr || '');
+      this.statusTextEl.addEventListener('click', onDisconnect);
+      this.statusTextEl.setAttribute('title', 'Click to disconnect');
+      this.tooltipInstance = new bootstrap.Tooltip(this.statusTextEl);
     } else {
-      if (data.active_listeners.length > 0) {
-        st.append('<i>Listening ' + data.active_listeners + '</i>');
+      if (data.active_listeners && data.active_listeners.length > 0) {
+        this.statusTextEl.innerHTML = '<i class="text-info">Listening ' + data.active_listeners + '</i>';
       } else {
-        st.append('<i>Ready</i>');
+        this.statusTextEl.innerHTML = '<i class="text-muted">Ready</i>';
       }
-      st.attr('title', 'Click to connect').tooltip('fixTitle').tooltip('hide');
-      st.click(this.onReadyClick);
+      this.statusTextEl.setAttribute('title', 'Click to connect');
+      this.statusTextEl.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.onReadyClick();
+      });
+      this.tooltipInstance = new bootstrap.Tooltip(this.statusTextEl);
     }
   }
 
   disconnect(dirty, successHandler) {
-    if (successHandler === undefined) {
-      successHandler = () => { };
-    }
-    $.post(
-      '/api/disconnect?dirty=' + dirty,
-      {},
-      function(response) {
-        successHandler();
-      },
-      'json'
-    );
+    fetch('/api/disconnect?dirty=' + dirty, { method: 'POST' })
+      .then(response => {
+        if (response.ok && successHandler) successHandler();
+      })
+      .catch(err => console.error('Disconnect failed', err));
   }
 }
 

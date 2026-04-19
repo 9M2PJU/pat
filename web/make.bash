@@ -12,7 +12,7 @@ docker volume create pat-web-nvm-cache >/dev/null 2>&1 || true
 
 # Run the container with volume mounts for caching and bind mount for source
 if [[ "$1" == "dev" ]]; then
-    echo "Starting dev server on port 8081..."
+    echo "Starting dev server..."
     docker run --rm -it \
         -v "$(pwd):/app" \
         -v pat-web-node-modules:/app/node_modules \
@@ -20,7 +20,7 @@ if [[ "$1" == "dev" ]]; then
         -w /app \
         -p 8081:8081 \
         pat-web-builder \
-        "nvm install && nvm use && npm install && npx webpack-dev-server --mode=development --port=8081 --host 0.0.0.0"
+        "nvm install && nvm use && npm install && npm run dev -- --host 0.0.0.0 --port 8081"
 else
     echo "Running npm build..."
     docker run --rm \
@@ -29,5 +29,5 @@ else
         -v pat-web-nvm-cache:/home/node/.nvm \
         -w /app \
         pat-web-builder \
-        "nvm install && nvm use && npm ci && npm run production"
+        "nvm install && nvm use && npm install && npm run build"
 fi

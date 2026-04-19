@@ -13,6 +13,7 @@ require (
 	github.com/gorilla/websocket v1.5.3
 	github.com/harenber/ptc-go/v2 v2.2.4
 	github.com/hashicorp/go-version v1.8.0
+	github.com/joho/godotenv v1.5.1
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/la5nta/wl2k-go v1.0.1
 	github.com/microcosm-cc/bluemonday v1.0.27

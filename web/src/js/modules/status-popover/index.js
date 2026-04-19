@@ -1,10 +1,11 @@
-import $ from 'jquery';
+import * as bootstrap from 'bootstrap';
 
 export class StatusPopover {
   constructor() {
     this.statusPopoverDiv = null;
     this.guiStatusLight = null;
     this.navbarBrand = null;
+    this.popover = null;
     this._panelSelectors = {
       websocketError: '#websocket_error',
       webserverInfo: '#webserver_info',
@@ -15,60 +16,73 @@ export class StatusPopover {
   }
 
   init() {
-    this.statusPopoverDiv = $('#status_popover_content');
-    this.guiStatusLight = $('#gui_status_light');
-    this.navbarBrand = $('.navbar-brand');
+    this.statusPopoverDiv = document.getElementById('status_popover_content');
+    this.guiStatusLight = document.getElementById('gui_status_light');
+    this.navbarBrand = document.querySelector('.navbar-brand');
     this._initPopover();
   }
 
   _initPopover() {
-    this.showWebsocketError("Attempting to connect to WebSocket..."); // Initial message
-    this.showNotificationsErrorPanel(); // Content will be managed by NotificationService
+    this.showWebsocketError("Attempting to connect to WebSocket...");
+    this.showNotificationsErrorPanel();
 
-    this.guiStatusLight.popover({
-      placement: 'bottom',
-      content: this.statusPopoverDiv,
-      html: true,
-    });
+    if (this.guiStatusLight) {
+      this.popover = new bootstrap.Popover(this.guiStatusLight, {
+        placement: 'bottom',
+        content: this.statusPopoverDiv,
+        html: true,
+        sanitize: false, // Important to allow our complex content
+      });
 
-    // Hack to force popover to grab it's content div
-    this.guiStatusLight.popover('show');
-    this.guiStatusLight.popover('hide');
-    this.statusPopoverDiv.show();
-
-    // Bind click on navbar-brand
-    this.navbarBrand.off('click.statusPopover').on('click.statusPopover', (e) => {
-      this.guiStatusLight.popover('toggle');
-    });
+      this.navbarBrand.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.popover.toggle();
+      });
+    }
+    
+    if (this.statusPopoverDiv) {
+        this.statusPopoverDiv.style.display = 'block';
+    }
   }
 
   addSection({ severity, title, body }) {
-    const panelClass = `panel-${severity}`;
-    const newSection = $(`
-        <div class="panel panel-sm ${panelClass}" data-severity="${severity}">
-            <div class="panel-heading"></div>
-            <div class="panel-body"></div>
-        </div>
-    `);
+    const cardClass = `text-bg-${severity === 'danger' ? 'danger' : severity === 'warning' ? 'warning' : 'info'}`;
+    const newSection = document.createElement('div');
+    newSection.className = `card mb-2 ${cardClass}`;
+    newSection.dataset.severity = severity;
+    newSection.innerHTML = `
+        <div class="card-header py-1 px-2 small">${title}</div>
+        <div class="card-body py-1 px-2 small"></div>
+    `;
 
-    newSection.find('.panel-heading').text(title);
-    newSection.find('.panel-body').append(body);
+    const bodyEl = newSection.querySelector('.card-body');
+    if (typeof body === 'string') {
+        bodyEl.innerHTML = body;
+    } else {
+        bodyEl.appendChild(body);
+    }
 
     const severityOrder = { danger: 3, warning: 2, info: 1 };
     const newSeverity = severityOrder[severity] || 0;
 
     let inserted = false;
-    this.statusPopoverDiv.find('.panel[data-severity]').each(function() {
-      const existingSeverity = severityOrder[$(this).data('severity')] || 0;
+    const existingPanels = this.statusPopoverDiv.querySelectorAll('.card[data-severity]');
+    for (const panel of existingPanels) {
+      const existingSeverity = severityOrder[panel.dataset.severity] || 0;
       if (newSeverity > existingSeverity) {
-        $(this).before(newSection);
+        panel.parentNode.insertBefore(newSection, panel);
         inserted = true;
-        return false; // break loop
+        break;
       }
-    });
+    }
 
     if (!inserted) {
-      this.find(this._panelSelectors.noError).before(newSection);
+      const noError = this.statusPopoverDiv.querySelector(this._panelSelectors.noError);
+      if (noError) {
+          noError.parentNode.insertBefore(newSection, noError);
+      } else {
+          this.statusPopoverDiv.appendChild(newSection);
+      }
     }
 
     this.updateGUIStatus();
@@ -76,23 +90,20 @@ export class StatusPopover {
   }
 
   removeSection(section) {
-    if (section && section.length) {
-      $(section).remove();
+    if (section) {
+      section.remove();
       this.updateGUIStatus();
     }
   }
 
   _setPanelState(panelSelector, isVisible, content = null, isHtml = false) {
-    const panel = this.find(panelSelector);
-    if (!panel.length) {
-      return;
-    }
+    const panel = this.statusPopoverDiv.querySelector(panelSelector);
+    if (!panel) return;
+
     if (content !== null) {
-      const panelBody = panel.find('.panel-body');
-      if (panelBody.length) {
-        isHtml ? panelBody.html(content) : panelBody.text(content);
-      } else {
-        console.warn(`StatusPopover: Panel "${panelSelector}" is missing a .panel-body, cannot set content.`);
+      const panelBody = panel.querySelector('.card-body, .panel-body');
+      if (panelBody) {
+        isHtml ? panelBody.innerHTML = content : panelBody.textContent = content;
       }
     }
     this.showGUIStatus(panel, isVisible);
@@ -101,47 +112,33 @@ export class StatusPopover {
 
   updateGUIStatus() {
     let color = 'success';
-    this.statusPopoverDiv
-      .find('.panel-info')
-      .not('.hidden')
-      .not('.ignore-status')
-      .each(function(i) {
-        color = 'info';
-      });
-    this.statusPopoverDiv
-      .find('.panel-warning')
-      .not('.hidden')
-      .not('.ignore-status')
-      .each(function(i) {
-        color = 'warning';
-      });
-    this.statusPopoverDiv
-      .find('.panel-danger')
-      .not('.hidden')
-      .not('.ignore-status')
-      .each(function(i) {
-        color = 'danger';
-      });
-    this.guiStatusLight
-      .removeClass(function(index, className) {
-        return (className.match(/(^|\s)btn-\S+/g) || []).join(' ');
-      })
-      .addClass('btn-' + color);
+    
+    const hasDanger = this.statusPopoverDiv.querySelector('.card.text-bg-danger:not(.d-none):not(.ignore-status), .panel-danger:not(.hidden):not(.ignore-status)');
+    const hasWarning = this.statusPopoverDiv.querySelector('.card.text-bg-warning:not(.d-none):not(.ignore-status), .panel-warning:not(.hidden):not(.ignore-status)');
+    const hasInfo = this.statusPopoverDiv.querySelector('.card.text-bg-info:not(.d-none):not(.ignore-status), .panel-info:not(.hidden):not(.ignore-status)');
 
-    if (color === 'success') {
-      this.showGUIStatus(this.find(this._panelSelectors.noError), true);
-    } else {
-      this.showGUIStatus(this.find(this._panelSelectors.noError), false);
+    if (hasDanger) color = 'danger';
+    else if (hasWarning) color = 'warning';
+    else if (hasInfo) color = 'info';
+
+    if (this.guiStatusLight) {
+        this.guiStatusLight.className = this.guiStatusLight.className.replace(/\bbtn-\S+/g, '');
+        this.guiStatusLight.classList.add('btn-' + color);
+    }
+
+    const noErrorPanel = this.statusPopoverDiv.querySelector(this._panelSelectors.noError);
+    if (noErrorPanel) {
+        this.showGUIStatus(noErrorPanel, color === 'success');
     }
   }
 
   showGUIStatus(element, show) {
-    const $element = $(element);
-    show ? $element.removeClass('hidden') : $element.addClass('hidden');
+    if (!element) return;
+    show ? element.classList.remove('d-none', 'hidden') : element.classList.add('d-none', 'hidden');
   }
 
   find(selector) {
-    return this.statusPopoverDiv.find(selector);
+    return this.statusPopoverDiv.querySelector(selector);
   }
 
   showWebsocketError(message = "WebSocket Connection Error") {
@@ -165,7 +162,8 @@ export class StatusPopover {
     this._setPanelState(this._panelSelectors.notificationsError, false);
   }
   getNotificationsErrorPanelBody() {
-    return this.find(this._panelSelectors.notificationsError).find('.panel-body');
+    const panel = this.find(this._panelSelectors.notificationsError);
+    return panel ? panel.querySelector('.card-body, .panel-body') : null;
   }
   getNotificationsErrorPanel() {
     return this.find(this._panelSelectors.notificationsError);
@@ -188,23 +186,28 @@ export class StatusPopover {
     } else if (panelKey === 'notifications') {
       panelSelector = this._panelSelectors.notificationsError;
     } else {
-      console.warn('[displayInsecureOriginWarning] Unknown panelKey:', panelKey);
       return;
     }
 
     const panel = this.find(panelSelector);
-    if (panel.length) {
-      panel.removeClass('panel-info').addClass('panel-warning');
-      const panelBody = panel.find('.panel-body');
-      // Clear previous content before appending to avoid duplicate messages
-      panelBody.find('p.insecure-origin-warning').remove();
-      panelBody.append('<p class="insecure-origin-warning">Ensure the <a href="https://github.com/la5nta/pat/wiki/The-web-GUI#powerful-features">secure origin criteria for Powerful Features</a> are met.</p>');
+    if (panel) {
+      panel.classList.remove('text-bg-info', 'panel-info');
+      panel.classList.add('text-bg-warning', 'panel-warning');
+      const panelBody = panel.querySelector('.card-body, .panel-body');
+      if (panelBody) {
+          const existing = panelBody.querySelector('p.insecure-origin-warning');
+          if (existing) existing.remove();
+          const p = document.createElement('p');
+          p.className = 'insecure-origin-warning';
+          p.innerHTML = 'Ensure the <a href="https://github.com/la5nta/pat/wiki/The-web-GUI#powerful-features">secure origin criteria for Powerful Features</a> are met.';
+          panelBody.appendChild(p);
+      }
       this.showGUIStatus(panel, true);
       this.updateGUIStatus();
     }
   }
 
   show() {
-    this.guiStatusLight.popover('show');
+    if (this.popover) this.popover.show();
   }
 }

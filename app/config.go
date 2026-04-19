@@ -12,6 +12,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/la5nta/pat/cfg"
 	"github.com/la5nta/pat/internal/buildinfo"
@@ -28,6 +29,9 @@ func LoadConfig(cfgPath string, fallback cfg.Config) (config cfg.Config, err err
 	case err != nil:
 		return config, err
 	}
+
+	// Load from .env file if it exists, without overwriting existing environment variables
+	_ = godotenv.Load()
 
 	// Environment variables overrides values from the config file
 	if err := envconfig.Process(buildinfo.AppName, &config); err != nil {

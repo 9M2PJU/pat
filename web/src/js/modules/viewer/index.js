@@ -1,23 +1,36 @@
 import { alert, isImageSuffix, formatFileSize, formXmlToFormName } from '../utils/index.js';
+import * as bootstrap from 'bootstrap';
 
 export class Viewer {
   constructor(composer) {
     this.composer = composer;
+    this.modalEl = null;
+    this.modalInstance = null;
+    this.confirmDeleteModalEl = null;
+    this.confirmDeleteModalInstance = null;
   }
 
   init() {
-    this.view = $('#message_view');
-    this.subject = this.view.find('#subject');
-    this.headers = this.view.find('#headers');
-    this.body = this.view.find('#body');
-    this.attachments = this.view.find('#attachments');
-    this.replyBtn = $('#reply_btn');
-    this.replyAllBtn = $('#reply_all_btn');
-    this.forwardBtn = $('#forward_btn');
-    this.editAsNewBtn = $('#edit_as_new_btn');
-    this.deleteBtn = $('#delete_btn');
-    this.archiveBtn = $('#archive_btn');
-    this.confirmDelete = $('#confirm_delete');
+    this.modalEl = document.getElementById('message_view');
+    if (!this.modalEl) return;
+    this.modalInstance = new bootstrap.Modal(this.modalEl);
+
+    this.confirmDeleteModalEl = document.getElementById('confirm_delete');
+    if (this.confirmDeleteModalEl) {
+      this.confirmDeleteModalInstance = new bootstrap.Modal(this.confirmDeleteModalEl);
+    }
+
+    this.subject = document.getElementById('subject');
+    this.headers = document.getElementById('headers');
+    this.body = document.getElementById('body');
+    this.attachments = document.getElementById('attachments');
+    
+    this.replyBtn = document.getElementById('reply_btn');
+    this.replyAllBtn = document.getElementById('reply_all_btn');
+    this.forwardBtn = document.getElementById('forward_btn');
+    this.editAsNewBtn = document.getElementById('edit_as_new_btn');
+    this.deleteBtn = document.getElementById('delete_btn');
+    this.archiveBtn = document.getElementById('archive_btn');
   }
 
   _buildMessagePath(folder, mid) {
@@ -25,185 +38,146 @@ export class Viewer {
   }
 
   _setRead(box, mid) {
-    const data = { read: true };
-
-    $.ajax(this._buildMessagePath(box, mid) + '/read', {
-      data: JSON.stringify(data),
-      contentType: 'application/json',
-      type: 'POST',
-      success: function(resp) { },
-      error: function(xhr, st, resp) {
-        alert(resp + ': ' + xhr.responseText);
-      },
-    });
+    fetch(this._buildMessagePath(box, mid) + '/read', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ read: true })
+    })
+    .catch(err => console.error('Failed to set read status', err));
   }
 
   _deleteMessage(box, mid) {
-    this.confirmDelete.on('click', '.btn-ok', e => {
-      this.view.modal('hide');
-      const $modalDiv = $(e.delegateTarget);
-      $.ajax(this._buildMessagePath(box, mid), {
-        type: 'DELETE',
-        success: function(resp) {
-          $modalDiv.modal('hide');
-          alert('Message deleted');
-        },
-        error: function(xhr, st, resp) {
-          $modalDiv.modal('hide');
-          alert(resp + ': ' + xhr.responseText);
-        },
-      });
-    });
-    this.confirmDelete.modal('show');
+    const okBtn = this.confirmDeleteModalEl.querySelector('.btn-ok');
+    const handler = () => {
+      this.modalInstance.hide();
+      fetch(this._buildMessagePath(box, mid), { method: 'DELETE' })
+        .then(async response => {
+          this.confirmDeleteModalInstance.hide();
+          if (response.ok) {
+            alert('Message deleted');
+          } else {
+            alert('Failed to delete: ' + await response.text());
+          }
+        });
+      okBtn.removeEventListener('click', handler);
+    };
+    okBtn.addEventListener('click', handler);
+    this.confirmDeleteModalInstance.show();
   }
 
   _archiveMessage(box, mid) {
-    $.ajax('/api/mailbox/archive', {
+    fetch('/api/mailbox/archive', {
+      method: 'POST',
       headers: {
-        'X-Pat-SourcePath': this._buildMessagePath(box, mid),
-      },
-      contentType: 'application/json',
-      type: 'POST',
-      success: resp => {
-        this.view.modal('hide');
+        'Content-Type': 'application/json',
+        'X-Pat-SourcePath': this._buildMessagePath(box, mid)
+      }
+    })
+    .then(async response => {
+      if (response.ok) {
+        this.modalInstance.hide();
         alert('Message archived');
-      },
-      error: function(xhr, st, resp) {
-        alert(resp + ': ' + xhr.responseText);
-      },
+      } else {
+        alert('Failed to archive: ' + await response.text());
+      }
     });
   }
 
   displayMessage(currentFolder, mid) {
     const msg_url = this._buildMessagePath(currentFolder, mid);
 
-    $.getJSON(msg_url, data => {
-      this.subject.text(data.Subject);
-      this.headers.empty();
-      this.headers.append('Date: ' + data.Date + '<br>');
-      this.headers.append('From: ' + data.From.Addr + '<br>');
-      this.headers.append('To: ');
-      for (let i = 0; data.To && i < data.To.length; i++) {
-        this.headers.append('<el>' + data.To[i].Addr + '</el>' + (data.To.length - 1 > i ? ', ' : ''));
-      }
-      if (data.P2POnly) {
-        this.headers.append(' (<strong>P2P only</strong>)');
-      }
+    fetch(msg_url)
+      .then(response => response.json())
+      .then(data => {
+        this.subject.textContent = data.Subject;
+        this.headers.innerHTML = `
+          Date: ${data.Date}<br>
+          From: ${data.From.Addr}<br>
+          To: ${data.To ? data.To.map(t => `<el>${t.Addr}</el>`).join(', ') : ''}
+          ${data.P2POnly ? ' (<strong>P2P only</strong>)' : ''}
+          ${data.Cc ? `<br>Cc: ${data.Cc.map(c => `<el>${c.Addr}</el>`).join(', ')}` : ''}
+        `;
 
-      if (data.Cc) {
-        this.headers.append('<br>Cc: ');
-        for (let i = 0; i < data.Cc.length; i++) {
-          this.headers.append('<el>' + data.Cc[i].Addr + '</el>' + (data.Cc.length - 1 > i ? ', ' : ''));
-        }
-      }
+        this.body.innerHTML = data.BodyHTML;
+        this.attachments.innerHTML = '';
 
-      this.body.html(data.BodyHTML);
+        if (data.Files && data.Files.length > 0) {
+          this.attachments.classList.remove('d-none');
+          data.Files.forEach(file => {
+            const formName = formXmlToFormName(file.Name);
+            const renderToHtml = formName ? 'true' : 'false';
+            const attachUrl = msg_url + '/' + file.Name + '?rendertohtml=' + renderToHtml;
 
-      this.attachments.empty();
+            const col = document.createElement('div');
+            col.className = 'col-6 col-md-3';
+            
+            const card = document.createElement('div');
+            card.className = 'attachment-preview card h-100';
 
-      // Add a row container
-      const row = $('<div class="row"></div>');
-      this.attachments.append(row);
-
-      if (!data.Files) {
-        this.attachments.hide();
-      } else {
-        this.attachments.show();
-      }
-      for (let i = 0; data.Files && i < data.Files.length; i++) {
-        const file = data.Files[i];
-        const formName = formXmlToFormName(file.Name);
-        let renderToHtml = 'false';
-        if (formName) {
-          renderToHtml = 'true';
-        }
-        const attachUrl = msg_url + '/' + file.Name + '?rendertohtml=' + renderToHtml;
-
-        const col = $('<div class="col-xs-6 col-md-3"></div>');
-        const link = $('<a class="attachment-preview"></a>');
-
-        if (isImageSuffix(file.Name)) {
-          link.attr('target', '_blank').attr('href', msg_url + '/' + file.Name);
-          link.html(
-            '<span class="filesize">' +
-            formatFileSize(file.Size) +
-            '</span>' +
-            '<span class="glyphicon glyphicon-paperclip"></span> ' +
-            '<img src="' +
-            msg_url +
-            '/' +
-            file.Name +
-            '" alt="' +
-            file.Name +
-            '">'
-          );
-          col.append(link);
-          this.attachments.append(col);
-        } else if (formName) {
-          this.attachments.append(
-            '<div class="col-xs-6 col-md-3"><a target="_blank" href="' +
-            attachUrl +
-            '" class="btn btn-default navbar-btn"><span class="glyphicon glyphicon-edit"></span> ' +
-            formName +
-            '</a></div>'
-          );
+            if (isImageSuffix(file.Name)) {
+              card.innerHTML = `
+                <a target="_blank" href="${msg_url}/${file.Name}" class="text-decoration-none h-100">
+                  <span class="filesize">${formatFileSize(file.Size)}</span>
+                  <i class="bi bi-paperclip"></i>
+                  <img src="${msg_url}/${file.Name}" alt="${file.Name}" class="img-fluid mt-2 rounded">
+                </a>
+              `;
+            } else if (formName) {
+              card.innerHTML = `
+                <a target="_blank" href="${attachUrl}" class="btn btn-outline-primary btn-sm w-100 h-100 d-flex align-items-center justify-content-center">
+                  <i class="bi bi-pencil-square me-1"></i> ${formName}
+                </a>
+              `;
+            } else {
+              card.innerHTML = `
+                <a target="_blank" href="${msg_url}/${file.Name}" class="text-decoration-none h-100">
+                  <span class="filesize">${formatFileSize(file.Size)}</span>
+                  <i class="bi bi-paperclip"></i>
+                  <br><span class="filename small text-truncate d-block mt-2">${file.Name}</span>
+                </a>
+              `;
+            }
+            col.appendChild(card);
+            this.attachments.appendChild(col);
+          });
         } else {
-          link.attr('target', '_blank').attr('href', msg_url + '/' + file.Name);
-          link.html(
-            '<span class="filesize">' +
-            formatFileSize(file.Size) +
-            '</span>' +
-            '<span class="glyphicon glyphicon-paperclip"></span> ' +
-            '<br><span class="filename">' +
-            file.Name +
-            '</span>'
-          );
-          col.append(link);
-          this.attachments.append(col);
+          this.attachments.classList.add('d-none');
         }
-      }
-      this.replyBtn.off('click');
-      this.replyBtn.click(evt => {
-        this.composer.reply(currentFolder, data, false);
-      });
 
-      this.replyAllBtn.off('click');
-      this.replyAllBtn.click(evt => {
-        this.composer.reply(currentFolder, data, true);
-      });
-      this.forwardBtn.off('click');
-      this.forwardBtn.click(evt => {
-        this.composer.forward(currentFolder, data);
-      });
-      this.editAsNewBtn.off('click');
-      this.editAsNewBtn.click(evt => {
-        this.composer.editAsNew(currentFolder, data);
-      });
-      this.deleteBtn.off('click');
-      this.deleteBtn.click(evt => {
-        this._deleteMessage(currentFolder, mid);
-      });
-      this.archiveBtn.off('click');
-      this.archiveBtn.click(evt => {
-        this._archiveMessage(currentFolder, mid);
-      });
+        const cloneAndReplace = (btn) => {
+          const newBtn = btn.cloneNode(true);
+          btn.parentNode.replaceChild(newBtn, btn);
+          return newBtn;
+        };
 
-      // Archive button should be hidden for already archived messages
-      if (currentFolder == 'archive') {
-        this.archiveBtn.parent().hide();
-      } else {
-        this.archiveBtn.parent().show();
-      }
+        this.replyBtn = cloneAndReplace(this.replyBtn);
+        this.replyBtn.addEventListener('click', () => this.composer.reply(currentFolder, data, false));
 
-      this.view.show();
-      this.view.modal('show');
-      let mbox = currentFolder;
-      if (!data.Read) {
-        window.setTimeout(() => {
-          this._setRead(mbox, data.MID);
-        }, 2000);
-      }
-    });
+        this.replyAllBtn = cloneAndReplace(this.replyAllBtn);
+        this.replyAllBtn.addEventListener('click', () => this.composer.reply(currentFolder, data, true));
+
+        this.forwardBtn = cloneAndReplace(this.forwardBtn);
+        this.forwardBtn.addEventListener('click', () => this.composer.forward(currentFolder, data));
+
+        this.editAsNewBtn = cloneAndReplace(this.editAsNewBtn);
+        this.editAsNewBtn.addEventListener('click', () => this.composer.editAsNew(currentFolder, data));
+
+        this.deleteBtn = cloneAndReplace(this.deleteBtn);
+        this.deleteBtn.addEventListener('click', () => this._deleteMessage(currentFolder, mid));
+
+        this.archiveBtn = cloneAndReplace(this.archiveBtn);
+        this.archiveBtn.addEventListener('click', () => this._archiveMessage(currentFolder, mid));
+
+        if (currentFolder === 'archive') {
+          this.archiveBtn.closest('li').classList.add('d-none');
+        } else {
+          this.archiveBtn.closest('li').classList.remove('d-none');
+        }
+
+        this.modalInstance.show();
+        if (!data.Read) {
+          setTimeout(() => this._setRead(currentFolder, data.MID), 2000);
+        }
+      });
   }
 }
-

@@ -1,92 +1,105 @@
 <a href="http://getpat.io"><img src="https://raw.githubusercontent.com/la5nta/pat-website/gh-pages/img/logo.png" width="128" ></a>
 
+# Pat - Modern Winlink Client
+
 [![Build status](https://github.com/la5nta/pat/actions/workflows/go.yaml/badge.svg)](https://github.com/la5nta/pat/actions)
 [![Go Report Card](https://goreportcard.com/badge/github.com/la5nta/pat)](https://goreportcard.com/report/github.com/la5nta/pat)
 [![Liberapay Patreons](http://img.shields.io/liberapay/patrons/la5nta.svg?logo=liberapay)](https://liberapay.com/la5nta)
 
-## Overview
+Pat is a cross-platform Winlink client with basic messaging capabilities. It provides both a command-line interface and a **modern, responsive web interface** built with a premium glassmorphism aesthetic.
 
-Pat is a cross platform Winlink client with basic messaging capabilities.
+---
 
-It is the primary sandbox/prototype application for the [wl2k-go](https://github.com/la5nta/wl2k-go) project, and provides both a command line interface and a responsive (mobile-friendly) web interface.
+## 🚀 Quick Start (Recommended)
 
-It is mainly developed for Linux, but is also known to run on OS X, Windows and Android.
+The easiest way to get Pat up and running is using **Docker Compose**.
 
-#### Features
-* Message composer/reader (basic mailbox functionality).
-* Auto-shrink image attachments.
-* Post position reports with location from local GPS, browser location or manual entry.
-* Rig control (using hamlib).
-* CRON-like syntax for execution of scheduled commands (e.g. QSY or connect).
-* Built in http-server with web interface (mobile friendly).
-* Git style command line interface.
-* Listen for P2P connections using multiple modes concurrently.
-* AX.25, telnet, PACTOR and ARDOP support.
-* Experimental gzip message compression (See "Gzip experiment" below).
-
-##### Example
-```
-martinhpedersen@duo:~$ pat interactive
-> listen winmor,telnet-p2p,ax25
-2015/02/03 10:33:10 Listening for incoming traffic (winmor,telnet-p2p,ax25)...
-> connect winmor:///LA3F
-2015/02/03 10:34:28 Connecting to winmor:LA3F...
-2015/02/03 10:34:33 Connected to WINMOR:LA3F
-RMS Trimode 1.3.3.0 Follo.SE Oslo. Pactor & Winmor Hybrid Gateway
-LA5NTA has 117 minutes remaining with LA3F
-[WL2K-2.8.4.8-B2FWIHJM$]
-Wien CMS via LA3F >
->FF
-FC EM FOYNU8AKXX59 260 221 0
-F> 68
-1 proposal(s) received
-Accepting FOYNU8AKXX59
-Receiving [//WL2K test til linux] [offset 0]
->FF
-FQ
-Waiting for remote node to close the connection...
-> _
+### 1. Create a `docker-compose.yml`
+```yaml
+services:
+  pat:
+    image: la5nta/pat
+    container_name: pat
+    volumes:
+      - ./pat-data:/app/pat
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
 ```
 
-### Gzip experiment
+### 2. Launch the application
+```bash
+docker-compose up -d
+```
 
-Gzip message compression has been added as an experimental B2F extension. The extension is implemented as a backwards compatible alternative to the ancient LZHUF compression.
+### 3. Access the Web UI
+Open your browser and navigate to `http://localhost:8080/ui`.
 
-This experiment is enabled by default and sessions between two Pat nodes (or other software supporting this B2F extension) will use gzip compression when transferring messages.
+---
 
-For more information, see <https://github.com/la5nta/wl2k-go#gzip-experiment>.
+## ✨ Modernized Web Interface
 
-## Copyright/License
+The web interface has been recently overhauled for a premium, lightweight experience:
+- **Zero jQuery:** Fully refactored to Vanilla JavaScript (ES Modules).
+- **Bootstrap 5:** Modern, responsive layout with native components.
+- **Glassmorphism Design:** Sleek, semi-transparent UI with high-end aesthetics.
+- **Native Fetch API:** Efficient, promise-based data synchronization with the Go backend.
+- **Bootstrap Icons:** Crisp, modern iconography throughout the app.
 
-Copyright (c) 2020 Martin Hebnes Pedersen LA5NTA
+---
 
-### Contributors (alphabetical)
+## 🛠 Features
+* **Multi-Mode Support:** AX.25, Telnet, PACTOR, ARDOP, and Vara HF/FM.
+* **Modern Mailbox:** Full composer/reader functionality with basic mailbox management.
+* **Smart Attachments:** Auto-shrink image attachments for faster transmission.
+* **Geolocation:** Post position reports using local GPS, browser location, or manual entry.
+* **Rig Control:** Integrated hamlib support for automated frequency and PTT control.
+* **Scheduled Tasks:** CRON-like syntax for automated execution of commands.
+* **P2P Listening:** Listen for incoming connections using multiple modes concurrently.
 
-* AB3E - Justin Overfelt
-* DL1THM - Torsten Harenberg
-* HB9GPA - Matthias Renner
-* K0RET - Ryan Turner
-* K0SWE - Chris Keller
-* KD8DRX - Will Davidson
-* KE8HMG - Andrew Huebner
-* KI7RMJ - Rainer Grosskopf
-* KM6LBU - Robert Hernandez
-* LA3QMA - Kai Günter Brandt
-* LA4TTA - Erlend Grimseid
-* LA5NTA - Martin Hebnes Pedersen
-* N2YGK - Alan Crosswell
-* VE7GNU - Doug Collinge
-* W6IPA  - JC Martin
-* WY2K - Benjamin Seidenberg
+---
 
-## Thanks to
+## ⚙️ Configuration (.env)
 
-The JNOS developers for the properly maintained lzhuf implementation, as well as the original author Haruyasu Yoshizaki.
+Pat supports loading configuration via environment variables, which is especially useful when running in Docker. You can use the provided [.env.example](.env.example) as a template:
 
-The paclink-unix team (Nicholas S. Castellano N2QZ and others) - reference implementation
+```env
+PAT_MYCALL=W1AW
+PAT_LOCATOR=FN31pr
+PAT_LISTEN=telnet,ardop
+```
 
-Amateur Radio Safety Foundation, Inc. - The Winlink 2000 project
+---
 
-F6FBB Jean-Paul ROUBELAT - the FBB forwarding protocol
+## 💻 Manual Installation
 
-_Pat/wl2k-go is not affiliated with The Winlink Development Team nor the Winlink 2000 project [http://winlink.org]._
+### Binary Releases
+Download the latest pre-compiled binaries from the [Releases](https://github.com/la5nta/pat/releases) page.
+
+### Build from Source
+If you have Go installed, you can build Pat from source:
+
+```bash
+git clone https://github.com/la5nta/pat
+cd pat
+./make.bash
+```
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+### Modern Frontend Development
+The frontend is located in the `web/` directory. It uses a modern Vite-based pipeline.
+- To start the dev server: `cd web && npm install && npm run dev`
+- To build for production: `./web/make.bash`
+
+---
+
+## 📜 License
+
+Copyright (c) 2020 Martin Hebnes Pedersen LA5NTA. Distributed under the MIT License.
+
+_Pat/wl2k-go is not affiliated with The Winlink Development Team nor the Winlink 2000 project._

@@ -1,6 +1,5 @@
-@import '~bootstrap/dist/css/bootstrap.min.css';
-@import '~bootstrap-select/dist/css/bootstrap-select.min.css';
-@import '~bootstrap-tokenfield/dist/css/bootstrap-tokenfield.min.css';
+@import 'bootstrap/scss/bootstrap';
+@import 'bootstrap-icons/font/bootstrap-icons.css';
 
 html {
   position: relative;
@@ -64,6 +63,7 @@ body > .container {
 
 .icon-spin {
   animation: spin 1s infinite linear;
+  display: inline-block;
 }
 
 @keyframes spin {
@@ -74,40 +74,25 @@ body > .container {
 /*
  * GUI Status Popover
  */
-.popover-content {
+.popover-body {
   padding: 9px 12px;
   padding-bottom: 3px;
 }
 
-.popover-content .btn {
+.popover-body .btn {
   padding-top: 2px;
   padding-bottom: 2px;
-}
-
-.panel-sm {
-  margin-bottom: 6px;
-}
-
-.panel-sm > .panel-heading {
-  font-weight: bold;
-  font-size: 14px;
-  padding: 5px 10px;
-}
-
-.panel-sm > .panel-body {
-  font-size: 12px;
-  line-height: 1.4;
-  padding: 10px;
 }
 
 .status-light {
   width: 10px;
   height: 10px;
   text-align: center;
-  padding: 1px 0;
+  padding: 0;
   border-radius: 15px;
   margin-bottom: 3px;
   margin-right: -3px;
+  display: inline-block;
 }
 
 /*
@@ -130,23 +115,16 @@ body > .container {
  * Message viewer
  */
 #message_view {
-  display: none;
   font-size: 80%;
 }
 
 #composer {
-  display: none;
   font-size: 80%;
 }
 
 .modal-header .btn-group {
   margin-right: 5px;
   margin-top: -5px;
-}
-
-/* Work-around for issue with tokenfield and input-group-sm on bootstrap 3.1 or newer */
-.input-group-sm .tokenfield {
-  height: auto;
 }
 
 .modal-header .btn-group button {
@@ -157,19 +135,57 @@ body > .container {
   color: #fff;
 }
 
+/*
+ * Premium Design Tokens & Utilities
+ */
+:root {
+  --pat-glass-bg: rgba(255, 255, 255, 0.7);
+  --pat-glass-border: rgba(255, 255, 255, 0.3);
+  --pat-glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  --pat-primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --pat-surface-bg: #f8f9fa;
+}
+
+.glass-card {
+  background: var(--pat-glass-bg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--pat-glass-border);
+  box-shadow: var(--pat-glass-shadow);
+  border-radius: 16px;
+}
+
+.glass-navbar {
+  background: rgba(33, 37, 41, 0.85) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
 .primary.modal-header {
-  background-color: #337ab7;
+  background: var(--pat-primary-gradient);
   color: #fff;
+  border-bottom: none;
 }
 
-.primay.modal-body {
-  padding: 0px 0;
-  margin-left: 5px;
+.modal-content {
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
 }
 
-.primary.modal-footer {
-  background-color: #333;
+.status-light {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+  box-shadow: 0 0 12px currentColor;
+  transition: all 0.3s ease;
 }
+
 
 #composer_attachments {
   margin-top: 10px;
@@ -187,7 +203,7 @@ body > .container {
   white-space: pre-wrap;
 }
 
-.panel-title {
+.card-title {
   font-size: 115%;
   font-weight: bolder;
 }
@@ -205,26 +221,10 @@ body > .container {
     overflow-y: auto !important;
     white-space: pre-wrap;
   }
-  #message_view {
-    font-size: 80%;
-  }
   #folder {
     max-height: 700px;
     overflow-y: auto;
   }
-}
-
-.panel-fluid {
-  margin: 0px 0;
-  padding: 0px 0;
-}
-
-.panel-heading p {
-  margin: 0px 0;
-}
-
-#connectURLPreview {
-  font-size: 80%;
 }
 
 /*
@@ -240,56 +240,28 @@ body > .container {
 #console {
   height: 120px;
   overflow-y: auto;
-  background-color: #272822;
+  background-color: #212529; /* Dark background */
   color: #ffffff;
-  line-height: 0.5em;
-  padding: 3px;
+  line-height: 1.2;
+  padding: 5px;
+  font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  margin: 0;
 }
 
 #console .terminal {
-  font-size: 0.6em;
-}
-
-.msgbody p {
-}
-
-.msgbody blockquote {
-  font-size: 1em;
-  color: #777777;
-  margin-top: 0px;
-  padding-left: 5px;
-  margin-bottom: 10px;
-}
-
-.msgbody blockquote p {
-  margin-top: 0px;
-  margin-bottom: 0px;
-}
-
-.msgbody blockquote ul {
-  margin-top: 0px;
-  margin-bottom: -20px;
-  margin-left: 0px;
-  padding-left: 15px;
+  font-size: 0.75rem;
+  display: block;
 }
 
 @media screen and (min-width: 1024px) {
   .footer {
-    position: absolute;
-    bottom: 15px;
-    width: 100%;
     height: 130px;
   }
   #console {
     height: 120px;
-    overflow-y: auto;
-    background-color: #272822;
-    color: #ffffff;
-    line-height: 1em;
-    padding: 3px;
   }
   #console .terminal {
-    font-size: 0.9em;
+    font-size: 0.875rem;
   }
 }
 
@@ -298,33 +270,35 @@ body > .container {
   display: block;
   padding: 10px;
   margin: 2px;
-  border: 1px solid #ddd;
+  border: 1px solid #dee2e6;
   border-radius: 4px;
   text-decoration: none;
   background: white;
   position: relative;
 
-  .close {
+  .btn-close {
     position: absolute;
     right: 8px;
     top: 6px;
     margin-left: 5px;
+    font-size: 0.75rem;
   }
 
   .filename {
     display: -webkit-box;
-    -webkit-line-clamp: 3;  /* Show max 3 lines */
+    -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
     margin-top: 4px;
     word-wrap: break-word;
     text-align: left;
+    font-size: 0.85rem;
   }
 
   .filesize {
-    color: #777;
-    font-size: 0.9em;
+    color: #6c757d;
+    font-size: 0.75rem;
     margin-left: 0;
     margin-right: 4px;
     float: left;
@@ -334,11 +308,6 @@ body > .container {
     max-width: 100%;
     margin-top: 5px;
   }
-}
-
-#composer_attachments .row {
-  margin-left: -2px;
-  margin-right: -2px;
 }
 
 .btn-file {
@@ -364,23 +333,16 @@ body > .container {
 
 .compose-options {
   margin-top: 10px;
-  margin-bottom: -10px;
 }
 
-/* Icon modifications */
 .icon-flip {
   transform: scaleX(-1);
-  -moz-transform: scaleX(-1);
-  -webkit-transform: scaleX(-1);
-  -ms-transform: scaleX(-1);
 }
 
-
-.composer-field .form-control,
-.composer-field .tokenfield.form-control {
-  max-height: 7em;  /* Approximately 4-5 lines of text */
+.composer-field .form-control {
+  max-height: 7em;
   height: auto !important;
-  min-height: 30px;
+  min-height: 38px;
   overflow-y: auto;
 }
 
@@ -388,22 +350,6 @@ body > .container {
   font-size: 12px;
   margin: 5px 0px;
   padding: 5px 5px;
-}
-
-input[type='checkbox'],
-input[type='radio'] {
-  vertical-align: -2px;
-  margin: 0;
-  padding: 0;
-}
-
-#configForm .checkbox label {
-  display: flex;
-  align-items: center;
-}
-
-#configForm input[type='checkbox'] {
-  margin-right: 5px;
 }
 
 .rms-table-container {
@@ -414,7 +360,8 @@ input[type='radio'] {
 .rms-table-container thead th {
   position: sticky;
   top: 0;
-  background: #eee;
+  background: #f8f9fa;
+  z-index: 10;
 }
 
 .checkbox-list {
@@ -422,123 +369,35 @@ input[type='radio'] {
   overflow-y: auto;
 }
 
-.checkbox-list-items {
-  list-style: none;
-  padding-left: 0;
-  margin-bottom: 0;
-}
-
-.checkbox-list-items li {
-  margin-bottom: 5px;
-}
-
-/* Nested forms styling */
-.nested-folder {
-  margin-left: 15px;
-  border-left: 2px solid #eee;
-  padding-left: 15px;
-}
-
-.folder-content {
-  padding-left: 15px;
-}
-
-#selectForm .modal-header .container {
-  padding: 0;
-  width: 100%;
-}
-
-#selectForm .modal-header .row {
-  margin: 0;
-}
-
-#selectForm .modal-header .col {
-  padding: 0;
-}
-
-.folder-toggle {
-  width: 100%;
-  text-align: left;
-  position: relative;
-}
-
-.folder-toggle::after {
-  content: '';
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  border-left: 5px solid transparent;
-  border-right: 5px solid transparent;
-  border-top: 5px solid currentColor;
-}
-
-.folder-toggle.collapsed::after {
-  transform: translateY(-50%) rotate(-90deg);
-}
-
-.form-item {
-  margin: 5px 0;
-}
-
-.search-container {
-  position: relative;
-  margin: 20px 0 2px 0;
-  max-width: 30ch;
-}
-
-#formSearchInput {
-  width: 100%;
-  padding-right: 30px; /* Make room for the clear button */
-}
-
-.search-clear {
-  position: absolute;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  border: none;
-  background: none;
-  color: #999;
-  padding: 0 10px;
-}
-
-.search-clear:hover {
-  color: #666;
-}
-
-/* Create Account Modal */
-#breadcrumb {
-  .breadcrumb-step {
-    color: #aaa;
-    &.active {
-      color: #333;
-      font-weight: bold;
-    }
-    &.completed .badge {
-      background-color: #5cb85c;
-      color: white;
-    }
-    &.completed::after {
-      content: ' ✓';
-      color: #5cb85c;
-    }
+/* Breadcrumb for create account */
+.breadcrumb-step {
+  color: #6c757d;
+  &.active {
+    color: #212529;
+    font-weight: bold;
   }
-  .breadcrumb-arrow {
-    color: #aaa;
+  &.completed .badge {
+    background-color: #198754 !important;
   }
 }
 
-#createAccountModal .checkbox label {
-  display: flex;
-  align-items: center;
+/* Custom glyphicons replacement mapping */
+.glyphicon {
+  display: inline-block;
+  font-family: 'bootstrap-icons';
+  font-style: normal;
+  font-weight: normal;
+  line-height: 1;
+  -webkit-font-smoothing: antialiased;
 }
 
-#createAccountModal .checkbox input[type="checkbox"] {
-  margin-top: 0;
-  margin-right: 5px;
-}
-
-#createAccountModal #step4 .checkbox {
-  margin-bottom: 20px;
-}
+.glyphicon-refresh::before { content: "\F52A"; } /* bi-arrow-clockwise */
+.glyphicon-edit::before { content: "\F4CB"; }    /* bi-pencil-square */
+.glyphicon-map-marker::before { content: "\F3E8"; } /* bi-geo-alt */
+.glyphicon-send::before { content: "\F52D"; }    /* bi-send */
+.glyphicon-remove::before { content: "\F62A"; }  /* bi-x-lg */
+.glyphicon-trash::before { content: "\F5DE"; }   /* bi-trash */
+.glyphicon-share-alt::before { content: "\F1E1"; } /* bi-reply */
+.glyphicon-briefcase::before { content: "\F1CC"; } /* bi-briefcase */
+.glyphicon-warning-sign::before { content: "\F33A"; } /* bi-exclamation-triangle */
+.glyphicon-plus::before { content: "\F4FE"; }    /* bi-plus-lg */

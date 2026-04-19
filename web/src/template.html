@@ -5,9 +5,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Template Editor</title>
-  <link rel="icon" type="image/png" href="../dist/static/pat_logo.png">
-  <link href="../dist/css/style.css" rel="stylesheet">
-  <link href="../dist/css/template.css" rel="stylesheet">
+  <link rel="icon" type="image/png" href="./static/pat_logo.png">
+  <link rel="stylesheet" href="./scss/app.scss">
+  <link rel="stylesheet" href="./scss/template.scss">
 </head>
 
 <body>
@@ -32,12 +32,12 @@
   <div class="container" style="margin-top: 60px">
     <div class="row">
       <div class="col-md-10 col-md-offset-1">
-        <div class="panel panel-default">
+        <div class="card">
           <div id="template_error" class="alert alert-danger" style="display:none"></div>
-          <div class="panel-heading">
+          <div class="card-header">
             <h3 class="panel-title" id="template_title">Template Editor</h3>
           </div>
-          <div class="panel-body">
+          <div class="card-body">
             <div id="headers_list" style="height: auto; white-space: pre-wrap; margin-bottom: 20px;">
               <!-- Header rows will be inserted here -->
             </div>
@@ -52,7 +52,7 @@
       </div>
     </div>
   </div>
-  <script src="../dist/js/template.js"></script>
+  <script type="module" src="./js/template.js"></script>
 </body>
 
 </html>
