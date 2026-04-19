@@ -5,7 +5,6 @@ import (
 	"embed"
 	"html/template"
 	"io"
-	"io/fs"
 	"log"
 	"net/http"
 	"net/http/httputil"
