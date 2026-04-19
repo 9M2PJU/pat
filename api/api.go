@@ -133,7 +133,7 @@ func NewHandler(app *app.App) *Handler {
 
 	r.HandleFunc("/ws", h.wsHandler)
 	r.PathPrefix("/ui").Handler(web.UIHandler(h.Options().MyCall))
-	r.PathPrefix("/dist").Handler(http.StripPrefix("/dist", web.DistHandler()))
+	r.PathPrefix("/dist").Handler(web.DistHandler())
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { http.Redirect(w, r, "/ui", http.StatusFound) })
 
 	return h

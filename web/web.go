@@ -34,12 +34,7 @@ func DistHandler() http.Handler {
 		}
 		return httputil.NewSingleHostReverseProxy(targetURL)
 	default:
-		// We use dist as the root for the file server
-		fsys, err := fs.Sub(embeddedFS, "dist")
-		if err != nil {
-			panic(err)
-		}
-		return http.FileServer(http.FS(fsys))
+		return http.FileServer(http.FS(embeddedFS))
 	}
 }
 

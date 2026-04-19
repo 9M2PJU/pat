@@ -6,15 +6,15 @@ RUN go mod download
 ADD . .
 RUN go build -o /src/pat
 
-FROM scratch
+FROM alpine:latest
+RUN apk add --no-cache ca-certificates
 LABEL org.opencontainers.image.source=https://github.com/9M2PJU/pat
 LABEL org.opencontainers.image.description="Pat - A portable Winlink client for amateur radio email"
 LABEL org.opencontainers.image.licenses=MIT
-# Make sure we have a /tmp directory with the correct permissions (01777)
-ADD .docker/tmp.tar /
-COPY --from=builder /etc/ssl/certs /etc/ssl/certs
+
 COPY --from=builder /src/pat /bin/pat
-USER 65534:65534
+
+# Set up the same environment as before
 WORKDIR /app
 ENV XDG_CONFIG_HOME=/app
 ENV XDG_DATA_HOME=/app
