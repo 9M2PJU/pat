@@ -63,6 +63,7 @@ func templateHandler(templatePath string, mycall string) http.HandlerFunc {
 			http.Redirect(w, r, "/ui/config", http.StatusFound)
 			return
 		}
+		log.Printf("Serving UI template: %s", templatePath)
 		t, err := loadTemplate(templatePath)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)

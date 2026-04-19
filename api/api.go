@@ -85,6 +85,12 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) { h.r.ServeHT
 
 func NewHandler(app *app.App) *Handler {
 	r := mux.NewRouter()
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			log.Printf("HTTP: %s %s %s", req.RemoteAddr, req.Method, req.URL)
+			next.ServeHTTP(w, req)
+		})
+	})
 	h := &Handler{app, NewWSHub(app), r}
 
 	r.HandleFunc("/api/connect", h.ConnectHandler)
