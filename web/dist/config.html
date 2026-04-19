@@ -21,16 +21,9 @@
 <body>
   <div class="navbar navbar-default navbar-fixed-top" role="navigation">
     <div class="container">
-      <div class="navbar-header">
-        <a class="navbar-brand" href="#">
-          <span class="btn status-light btn-success"></span> Configuration
-        </a>
-      </div>
-      <div class="collapse navbar-collapse">
-        <ul class="nav navbar-nav">
-          <li><a href="/ui">Back to Mailbox</a></li>
-        </ul>
-      </div>
+      <ul class="nav navbar-nav">
+        <li><a href="/ui"><span class="glyphicon glyphicon-arrow-left"></span> Back to Mailbox</a></li>
+      </ul>
     </div>
   </div>
 
@@ -269,12 +262,6 @@
                                   <option value="">None</option>
                                 </select>
                               </div>
-                              <div class="checkbox">
-                                <label>
-                                  <input type="checkbox" id="pactor_ptt_ctrl" name="pactor_ptt_ctrl">
-                                  PTT Control
-                                </label>
-                              </div>
                             </div>
                           </div>
                         </div>
@@ -433,12 +420,6 @@
                                   <option value="">None</option>
                                 </select>
                               </div>
-                              <div class="checkbox">
-                                <label>
-                                  <input type="checkbox" id="ax25_ptt_ctrl" name="ax25_ptt_ctrl">
-                                  PTT Control
-                                </label>
-                              </div>
                               <small class="form-text text-muted">Linux (kernel AX.25), AGWPE (AGWPE-compatible TNC),
                                 Serial-TNC (direct serial connection)</small>
                             </div>
@@ -506,7 +487,6 @@
                                       <label for="serial_tnc_type">TNC Type</label>
                                       <select class="form-control" id="serial_tnc_type" name="serial_tnc_type">
                                         <option value="kenwood">Kenwood</option>
-                                        <option value="generic">Generic</option>
                                       </select>
                                     </div>
                                     <div class="form-group">
@@ -622,12 +602,11 @@
               </div>
               <!-- /Rig Control Configuration -->
 
-
               <!-- GPSd Configuration -->
               <div class="panel-group" style="margin-top: 20px;">
                 <div class="panel panel-default">
                   <div class="panel-heading">
-                    <h3 class="panel-title">GPSd Configuration</h3>
+                    <h3 class="panel-title">GPSd</h3>
                   </div>
                   <div class="panel-body">
                     <div class="form-group">
