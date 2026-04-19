@@ -1,3 +1,4 @@
+import logoUrl from '../../../static/pat_logo.png';
 import { isInsecureOrigin } from '../utils/index.js';
 
 export class NotificationService {
@@ -46,7 +47,7 @@ export class NotificationService {
 
   show(title, body = '') {
     if (this.isSupported() && Notification.permission === 'granted') {
-      const options = { body, icon: '/dist/static/pat_logo.png' };
+      const options = { body, icon: logoUrl };
       return new Notification(title, options);
     }
     return null;
