@@ -12,9 +12,11 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"time"
 
 	"github.com/la5nta/pat/internal/debug"
+	"github.com/la5nta/pat/internal/directories"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -22,6 +24,7 @@ var ErrConnNotWrapped = errors.New("connection not wrapped for prehook")
 
 type Script struct {
 	File string
+	Dir  string
 	Args []string
 	Env  []string
 }
@@ -41,13 +44,31 @@ type Conn struct {
 	br *bufio.Reader
 }
 
-// Verify returns nil if the given script file is found and valid.
-func Verify(file string) error {
-	_, err := exec.LookPath(file)
-	if errors.Is(err, exec.ErrDot) {
-		err = nil
+// VerifyFile returns nil if the given script file is found and valid.
+func (s Script) VerifyFile() error {
+	p, err := s.Path()
+	if err != nil {
+		return err
 	}
-	return err
+	info, err := os.Stat(p)
+	if err != nil {
+		return err
+	}
+	if info.IsDir() {
+		return fmt.Errorf("%s: is a directory", s.File)
+	}
+	if _, err := exec.LookPath(p); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s Script) Path() (string, error) {
+	p := filepath.Join(s.Dir, s.File)
+	if !directories.IsInPath(s.Dir, p) {
+		return "", fmt.Errorf("%s: escapes base path", p)
+	}
+	return p, nil
 }
 
 // Wrap returns a wrapped connection with the ability to execute a prehook.
@@ -67,7 +88,11 @@ func (p *Conn) Read(b []byte) (int, error) { return p.br.Read(b) }
 // Execute executes the prehook script, returning nil if the process
 // terminated successfully (exit code 0).
 func (p *Conn) Execute(ctx context.Context, script Script) error {
-	cmd := exec.CommandContext(ctx, script.File, script.Args...)
+	name, err := script.Path()
+	if err != nil {
+		return err
+	}
+	cmd := exec.CommandContext(ctx, name, script.Args...)
 	cmd.Env = script.Env
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = p.Conn

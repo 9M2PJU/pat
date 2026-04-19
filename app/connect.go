@@ -167,9 +167,14 @@ func (a *App) Connect(connectStr string) (success bool) {
 	a.dialing = url
 	a.websocketHub.UpdateStatus()
 
-	if exec := url.Params.Get("prehook"); exec != "" {
-		if err := prehook.Verify(exec); err != nil {
-			log.Printf("prehook invalid: %s", err)
+	prehookScript := prehook.Script{
+		Dir:  a.options.PrehooksPath,
+		File: url.Params.Get("prehook"),
+		Args: url.Params["prehook-arg"],
+	}
+	if prehookScript.File != "" {
+		if err := prehookScript.VerifyFile(); err != nil {
+			log.Printf("invalid prehook: %s", err)
 			return
 		}
 	}
@@ -192,19 +197,15 @@ func (a *App) Connect(connectStr string) (success bool) {
 		return
 	}
 
-	if exec := url.Params.Get("prehook"); exec != "" {
+	if prehookScript.File != "" {
 		log.Println("Running prehook...")
-		script := prehook.Script{
-			File: exec,
-			Args: url.Params["prehook-arg"],
-			Env: append([]string{
-				buildinfo.AppName + "_DIAL_URL=" + connectStr,
-				buildinfo.AppName + "_REMOTE_ADDR=" + conn.RemoteAddr().String(),
-				buildinfo.AppName + "_LOCAL_ADDR=" + conn.LocalAddr().String(),
-			}, append(os.Environ(), a.Env()...)...),
-		}
+		prehookScript.Env = append([]string{
+			buildinfo.AppName + "_DIAL_URL=" + connectStr,
+			buildinfo.AppName + "_REMOTE_ADDR=" + conn.RemoteAddr().String(),
+			buildinfo.AppName + "_LOCAL_ADDR=" + conn.LocalAddr().String(),
+		}, append(os.Environ(), a.Env()...)...)
 		conn = prehook.Wrap(conn)
-		if err := script.Execute(ctx, conn); err != nil {
+		if err := prehookScript.Execute(ctx, conn); err != nil {
 			conn.Close()
 			log.Printf("Prehook script failed: %s", err)
 			return
