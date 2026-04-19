@@ -1,4 +1,4 @@
-import{P as Pe,M as Z,C as Ee,T as J}from"./bootstrap.esm-1vDdsExL.js";import{c as te,g as De}from"./_commonjsHelpers-BaZR1NwJ.js";function U(w){const t=document.getElementById("navbar_status");if(!t)return;const s=document.createElement("div");s.className="alert alert-info alert-dismissible fade show py-2 px-3 mb-0 rounded-0 small d-flex align-items-center shadow-sm",s.role="alert",s.innerHTML=`
+import{P as Pe,M as Z,C as Ee,T as J}from"./bootstrap.esm-1vDdsExL.js";import{c as te,g as De}from"./_commonjsHelpers-rc4n5z0M.js";function U(w){const t=document.getElementById("navbar_status");if(!t)return;const s=document.createElement("div");s.className="alert alert-info alert-dismissible fade show py-2 px-3 mb-0 rounded-0 small d-flex align-items-center shadow-sm",s.role="alert",s.innerHTML=`
     <i class="bi bi-info-circle-fill me-2"></i>
     <span>${w}</span>
     <button type="button" class="btn-close py-2" data-bs-dismiss="alert" aria-label="Close"></button>
