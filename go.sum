@@ -109,4 +109,4 @@ gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b/go.mod h1:K4uyk7z7BCEPqu6E+C
 gopkg.in/yaml.v3 v3.0.1 h1:fxVm/GzAzEWqLHuvctI91KS9hhNmmWOoWu0XTYJS7CA=
 gopkg.in/yaml.v3 v3.0.1/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=
 github.com/joho/godotenv v1.5.1 h1:7E8Ly6CD35S3uK0K9+w8/hvzA8V98UuS9e2Zmg7v6vY=
-github.com/joho/godotenv v1.5.1/go.mod h1:fS7RTr9sBBu62KCfLPrTzT1vX7pD8O02Y9UaI5L6n64=
+github.com/joho/godotenv v1.5.1/go.mod h1:f4LDr5Voq0i2e/R5DDNOoa2zzDfwtkZa6DnEwAbqwq4=
