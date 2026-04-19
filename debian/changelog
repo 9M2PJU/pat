@@ -1,3 +1,23 @@
+pat (1.0.0) stable; urgency=medium
+
+  * Fix panic on invalid schedule expressions
+  * Configuration:
+    - Remove deprecated config field "gpsd_addr" (use "gpsd.addr" instead)
+    - Remove deprecated config field "serial_tnc.baudrate" (use "serial_tnc.hbaud" instead)
+    - Remove obsolete serial_tnc.rig field from config
+  * Web Config:
+    - Fix "Back to mailbox" navigation issue
+    - Fix hamlib VFO selection
+    - Fix AX.25 engine Linux options
+    - Add missing PACTOR init script wiring
+    - Add missing schedule wiring
+    - Remove unsupported PACTOR and AX.25 PTT Control options
+    - Fix bfcache restoration issues
+  * Limit prehook paths to the prehooks directory
+  * Replace unmaintained howeyc/gopass with golang.org/x/term
+
+ -- Martin Hebnes Pedersen <martin.h.pedersen@gmail.com>  Sun, 19 Apr 2026 17:47:46 +0200
+
 pat (0.19.2) stable; urgency=medium
 
   * Fix rig selection reset on save in web config
